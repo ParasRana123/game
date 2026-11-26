@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #09090f;
+    color: #f8fafc;
+    font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    user-select: none;
+  }
+}
+
+.font-arcade {
+  font-family: 'Chakra Petch', 'Bebas Neue', 'Impact', sans-serif;
+  letter-spacing: 0.04em;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(249, 115, 22, 0.45), 0 0 42px rgba(234, 179, 8, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(249, 115, 22, 0.8), 0 0 64px rgba(234, 179, 8, 0.4);
+  }
+}
+
+.arcade-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
