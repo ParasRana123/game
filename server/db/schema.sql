@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS players (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  wins INTEGER NOT NULL DEFAULT 0,
+  losses INTEGER NOT NULL DEFAULT 0,
+  streak INTEGER NOT NULL DEFAULT 0,
+  favorite_character TEXT NOT NULL DEFAULT 'vikas_guru',
+  campaign_cleared BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+  id TEXT PRIMARY KEY,
+  mode TEXT NOT NULL,
+  arena_id TEXT NOT NULL,
+  p1_name TEXT NOT NULL,
+  p2_name TEXT NOT NULL,
+  p1_char TEXT NOT NULL,
+  p2_char TEXT NOT NULL,
+  winner_slot TEXT NOT NULL,
+  p1_rounds INTEGER NOT NULL,
+  p2_rounds INTEGER NOT NULL,
+  duration_sec INTEGER NOT NULL,
+  played_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
