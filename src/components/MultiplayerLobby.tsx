@@ -295,7 +295,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
           <div className="font-arcade text-xs uppercase tracking-wider text-slate-400">
             Choose Your Fighter
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2.5">
             {PLAYABLE_CHARACTERS.map((c) => {
               const selected = me?.characterId === c.id;
               return (

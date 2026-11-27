@@ -21,6 +21,7 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
   const def = CHARACTERS[characterId];
 
   useEffect(() => {
+    if (def.portraitImage) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -126,6 +127,28 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
     ctx.stroke();
     ctx.restore();
   }, [characterId, def]);
+
+  if (def.portraitImage) {
+    return (
+      <div
+        className={`relative overflow-hidden rounded-2xl shadow-lg bg-slate-950 ${className}`}
+        style={{
+          width: size,
+          height: size,
+          border: `2.5px solid ${def.palette.accent}`,
+          boxShadow: `0 0 18px ${hexToRgba(def.palette.aura, 0.45)}`,
+          transform: flip ? 'scaleX(-1)' : undefined,
+        }}
+      >
+        <img
+          src={def.portraitImage}
+          alt={def.name}
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <canvas

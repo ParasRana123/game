@@ -94,8 +94,8 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({
           />
         </div>
 
-        {/* 8-Character Roster Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {/* 9-Character Roster Grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
           {PLAYABLE_CHARACTERS.map((c) => {
             const isP1 = p1Char === c.id;
             const isP2 = p2Char === c.id;

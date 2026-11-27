@@ -243,7 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Sansad Showdown
             </p>
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300">
-              Choose from 8 satirical political titans, unleash voiced signature specials with dramatic reverb, chain arcade combos across 4 iconic Indian arenas, and conquer <span className="text-amber-300 font-semibold">FINAL SHOWDOWN</span> or battle friends live online!
+              Choose from 9 satirical political &amp; meme titans, unleash voiced signature specials with dramatic reverb, chain arcade combos across 4 iconic Indian arenas, and conquer <span className="text-amber-300 font-semibold">FINAL SHOWDOWN</span> or battle friends live online!
             </p>
           </motion.div>
 
@@ -356,7 +356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
           {PLAYABLE_CHARACTERS.map((char) => {
             const active = previewChar === char.id;
             return (

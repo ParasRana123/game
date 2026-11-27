@@ -122,7 +122,7 @@ export const CampaignMap: React.FC<CampaignMapProps> = ({
           <div className="font-arcade text-xs uppercase tracking-wider text-amber-400">
             Your Campaign Fighter
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
             {PLAYABLE_CHARACTERS.map((c) => (
               <button
                 key={c.id}
