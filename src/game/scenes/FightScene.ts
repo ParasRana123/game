@@ -15,19 +15,9 @@ import { AudioManager } from '@/audio/AudioManager';
 import { SocketClient } from '@/network/SocketClient';
 import { ArenaRenderer } from '../rendering/ArenaRenderer';
 import { drawProjectile, FighterRenderer } from '../rendering/FighterRenderer';
+import { FightSceneConfig, SceneLifecycleController } from './sceneLifecycle';
 
-export interface FightSceneConfig {
-  mode: GameMode;
-  p1Char: CharacterId;
-  p2Char: CharacterId;
-  arenaId: ArenaId;
-  difficulty: Difficulty;
-  isBossFight: boolean;
-  localSlot?: 0 | 1;
-  initialMatchState?: MatchState;
-  onHudUpdate: (state: MatchState) => void;
-  onMatchEnd: (state: MatchState, durationSec: number) => void;
-}
+export type { FightSceneConfig };
 
 interface FloatingText {
   obj: Phaser.GameObjects.Text;
@@ -47,6 +37,7 @@ interface SparkParticle {
 }
 
 export class FightScene extends Phaser.Scene {
+  private lifecycle: SceneLifecycleController;
   private cfg!: FightSceneConfig;
   private matchState!: MatchState;
   private arenaRenderer!: ArenaRenderer;
@@ -56,7 +47,6 @@ export class FightScene extends Phaser.Scene {
   private debugGfx!: Phaser.GameObjects.Graphics;
 
   private accumulator = 0;
-  private paused = false;
   private showHitboxes = false;
   private matchEndedSent = false;
   private startedAtMs = 0;
@@ -97,14 +87,18 @@ export class FightScene extends Phaser.Scene {
 
   constructor(initialConfig?: FightSceneConfig) {
     super('FightScene');
-    if (initialConfig) {
-      this.cfg = initialConfig;
+    this.lifecycle = new SceneLifecycleController(initialConfig);
+    const cfg = this.lifecycle.getConfig();
+    if (cfg) {
+      this.cfg = cfg;
     }
   }
 
   init(data?: FightSceneConfig): void {
-    if (data && 'mode' in data) {
-      this.cfg = data;
+    this.lifecycle.applyInitData(data);
+    const cfg = this.lifecycle.getConfig();
+    if (cfg) {
+      this.cfg = cfg;
     }
     this.matchEndedSent = false;
     this.accumulator = 0;
@@ -208,15 +202,11 @@ export class FightScene extends Phaser.Scene {
   };
 
   setPaused(paused: boolean): void {
-    if (this.cfg?.mode === 'online') {
-      this.paused = false;
-      return; // Online server stays authoritative
-    }
-    this.paused = paused;
+    this.lifecycle.setPaused(paused);
   }
 
   isPaused(): boolean {
-    return this.paused;
+    return this.lifecycle.isPaused();
   }
 
   setTouchInput(slot: 0 | 1, patch: Partial<InputState>): void {
@@ -262,7 +252,7 @@ export class FightScene extends Phaser.Scene {
 
     const timeSec = time / 1000;
 
-    if (!this.paused) {
+    if (!this.lifecycle.isPaused()) {
       const clampedDelta = Math.min(delta / 1000, 0.08);
       this.accumulator += clampedDelta;
 
