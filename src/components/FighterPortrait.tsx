@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CHARACTERS } from '@shared/characters';
 import { CharacterId } from '@shared/types';
+import { hexToRgba, shadeHex } from '@/game/rendering/CanvasArtHelpers';
+import { drawDetailedHead } from '@/game/rendering/FighterHeadBaker';
 
 interface FighterPortraitProps {
   characterId: CharacterId;
@@ -15,116 +17,128 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
   flip = false,
   className = '',
 }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const def = CHARACTERS[characterId];
-  const { skin, primary, secondary, accent, hair, aura } = def.palette;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = 2;
+    const res = 120 * dpr;
+    canvas.width = res;
+    canvas.height = res;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, 120, 120);
+
+    const { primary, secondary, accent, aura } = def.palette;
+
+    // Rounded card clipping
+    ctx.beginPath();
+    ctx.roundRect(3, 3, 114, 114, 20);
+    ctx.clip();
+
+    // Dramatic radial fight-card backdrop
+    const bgGrad = ctx.createRadialGradient(60, 44, 6, 60, 60, 74);
+    bgGrad.addColorStop(0, hexToRgba(aura, 0.58));
+    bgGrad.addColorStop(0.55, '#14192b');
+    bgGrad.addColorStop(1, '#070912');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 120, 120);
+
+    // Subtle arcade diagonal speed lines
+    ctx.strokeStyle = hexToRgba(accent, 0.14);
+    ctx.lineWidth = 3;
+    for (let x = -20; x < 140; x += 18) {
+      ctx.beginPath();
+      ctx.moveTo(x, 120);
+      ctx.lineTo(x + 48, 0);
+      ctx.stroke();
+    }
+
+    // Shoulders & Detailed Attire
+    const shoulderGrad = ctx.createLinearGradient(18, 76, 102, 120);
+    shoulderGrad.addColorStop(0, shadeHex(primary, 18));
+    shoulderGrad.addColorStop(1, shadeHex(primary, -28));
+    ctx.fillStyle = shoulderGrad;
+    ctx.beginPath();
+    ctx.moveTo(14, 120);
+    ctx.quadraticCurveTo(22, 82, 60, 82);
+    ctx.quadraticCurveTo(98, 82, 106, 120);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#090d16';
+    ctx.stroke();
+
+    if (def.headgear === 'beard_glasses') {
+      // Mitron cream kurta V-collar + pocket square
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(46, 82);
+      ctx.lineTo(74, 82);
+      ctx.lineTo(60, 108);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(79, 98, 12, 6);
+    } else if (def.headgear === 'gandhi_cap_muffler') {
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.roundRect(30, 80, 60, 16, 7);
+      ctx.fill();
+      ctx.strokeStyle = '#090d16';
+      ctx.stroke();
+    } else if (def.headgear === 'saree_bun') {
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.moveTo(28, 88);
+      ctx.lineTo(86, 120);
+      ctx.lineTo(66, 120);
+      ctx.lineTo(20, 98);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.moveTo(44, 83);
+      ctx.lineTo(76, 83);
+      ctx.lineTo(60, 106);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 2.5D Shaded Head
+    drawDetailedHead(ctx, def, 58, 52, def.isBoss ? 'fierce' : 'neutral');
+
+    // Card rim border
+    ctx.restore();
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(3, 3, 114, 114, 20);
+    ctx.stroke();
+    ctx.restore();
+  }, [characterId, def]);
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      className={className}
-      style={{ transform: flip ? 'scaleX(-1)' : undefined }}
-    >
-      <defs>
-        <radialGradient id={`bg_${characterId}`} cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor={aura} stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#0f172a" stopOpacity="0.95" />
-        </radialGradient>
-      </defs>
-      <rect x="2" y="2" width="96" height="96" rx="18" fill={`url(#bg_${characterId})`} stroke={accent} strokeWidth="3" />
-
-      {/* Shoulders / Kurta */}
-      <path d="M18 96 C20 70, 80 70, 82 96 Z" fill={primary} />
-      <path d="M35 96 L38 74 L62 74 L65 96 Z" fill={secondary} opacity="0.9" />
-
-      {def.headgear === 'beard_glasses' && (
-        <>
-          <polygon points="41,72 59,72 50,87" fill="#ffffff" />
-          <rect x="64" y="79" width="8" height="4" rx="1" fill="#facc15" />
-        </>
-      )}
-
-      {def.headgear === 'gandhi_cap_muffler' && (
-        <rect x="26" y="68" width="48" height="12" rx="6" fill={secondary} />
-      )}
-
-      {/* Head */}
-      <circle cx="50" cy="46" r="21" fill={skin} stroke="#0f172a" strokeWidth="2" />
-
-      {/* Eyes */}
-      <circle cx="43" cy="43" r="2.8" fill="#0f172a" />
-      <circle cx="57" cy="43" r="2.8" fill="#0f172a" />
-
-      {/* Smile / Grin */}
-      <path d="M43 54 Q50 59 57 54" stroke="#0f172a" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-
-      {/* Headgear variations */}
-      {def.headgear === 'beard_glasses' && (
-        <>
-          <ellipse cx="50" cy="27" rx="19" ry="7" fill={hair} />
-          <path d="M32 50 Q50 76 68 50 L62 67 Q50 74 38 67 Z" fill={hair} />
-          <circle cx="43" cy="43" r="6" fill="none" stroke={accent} strokeWidth="2" />
-          <circle cx="57" cy="43" r="6" fill="none" stroke={accent} strokeWidth="2" />
-          <line x1="49" y1="43" x2="51" y2="43" stroke={accent} strokeWidth="2" />
-        </>
-      )}
-
-      {def.headgear === 'youth_hair' && (
-        <path d="M29 42 Q32 20 53 22 Q70 22 71 41 Q58 31 39 33 Z" fill={hair} />
-      )}
-
-      {def.headgear === 'gandhi_cap_muffler' && (
-        <>
-          <path d="M30 33 Q50 14 70 33 Z" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.5" />
-          <rect x="42" y="49" width="16" height="3" rx="1.5" fill={hair} />
-        </>
-      )}
-
-      {def.headgear === 'saree_bun' && (
-        <>
-          <circle cx="28" cy="38" r="9" fill={hair} />
-          <ellipse cx="50" cy="28" rx="19" ry="8" fill={hair} />
-        </>
-      )}
-
-      {def.headgear === 'cinema_shades' && (
-        <>
-          <ellipse cx="50" cy="27" rx="20" ry="8" fill={hair} />
-          <rect x="33" y="37" width="14" height="9" rx="2" fill="#020617" stroke={accent} strokeWidth="1.5" />
-          <rect x="53" y="37" width="14" height="9" rx="2" fill="#020617" stroke={accent} strokeWidth="1.5" />
-          <line x1="47" y1="41" x2="53" y2="41" stroke={accent} strokeWidth="2" />
-        </>
-      )}
-
-      {def.headgear === 'saffron_bald' && (
-        <>
-          <rect x="48.5" y="29" width="3" height="8" rx="1" fill="#dc2626" />
-          <rect x="34" y="38" width="13" height="8" rx="2" fill="#0f172a" />
-          <rect x="53" y="38" width="13" height="8" rx="2" fill="#0f172a" />
-        </>
-      )}
-
-      {def.headgear === 'rustic_hair' && (
-        <>
-          <path d="M28 40 Q35 20 50 22 Q65 20 72 40 Q56 28 38 30 Z" fill={hair} />
-          <rect x="42" y="49" width="16" height="3.5" rx="1.5" fill="#475569" />
-        </>
-      )}
-
-      {def.headgear === 'tactical_beard' && (
-        <>
-          <ellipse cx="50" cy="27" rx="18" ry="6" fill={hair} />
-          <path d="M34 49 Q50 70 66 49 L62 63 Q50 69 38 63 Z" fill={hair} />
-        </>
-      )}
-
-      {def.headgear === 'golden_crown' && (
-        <>
-          <polygon points="32,30 38,12 45,27 50,8 55,27 62,12 68,30" fill="#facc15" stroke="#b45309" strokeWidth="1.5" />
-          <circle cx="50" cy="23" r="3" fill="#ef4444" />
-        </>
-      )}
-    </svg>
+    <canvas
+      ref={canvasRef}
+      width={240}
+      height={240}
+      aria-label={def.name}
+      className={`rounded-2xl shadow-lg ${className}`}
+      style={{
+        width: size,
+        height: size,
+        transform: flip ? 'scaleX(-1)' : undefined,
+      }}
+    />
   );
 };
