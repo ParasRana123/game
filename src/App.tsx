@@ -11,6 +11,7 @@ import { FightHUD } from '@/components/FightHUD';
 import { MatchResultModal } from '@/components/MatchResultModal';
 import { HowToPlayModal } from '@/components/HowToPlayModal';
 import { LeaderboardModal } from '@/components/LeaderboardModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type Screen = 'landing' | 'char_select_ai' | 'char_select_2p' | 'campaign' | 'online_lobby' | 'fight';
 
@@ -255,25 +256,35 @@ export function App() {
       {screen === 'fight' && activeMatch && (
         <div className="w-screen h-screen bg-[#05050a] flex items-center justify-center p-1 sm:p-3 overflow-hidden relative">
           <div className="relative w-full max-w-[1280px] aspect-video max-h-full">
-            <PhaserHost
-              key={activeMatch.key}
-              paused={paused}
-              onSceneReady={(controls) => {
-                touchControlRef.current = controls;
+            <ErrorBoundary
+              key={`eb_${activeMatch.key}`}
+              onReset={() => launchMatch({ ...activeMatch })}
+              onExit={() => {
+                setPaused(false);
+                setMatchResult(null);
+                setScreen('landing');
               }}
-              config={{
-                mode: activeMatch.mode,
-                p1Char: activeMatch.p1Char,
-                p2Char: activeMatch.p2Char,
-                arenaId: activeMatch.arenaId,
-                difficulty: activeMatch.difficulty,
-                isBossFight: activeMatch.isBossFight,
-                localSlot: activeMatch.localSlot,
-                initialMatchState: activeMatch.initialMatchState,
-                onHudUpdate: setHudState,
-                onMatchEnd: handleMatchEnd,
-              }}
-            />
+            >
+              <PhaserHost
+                key={activeMatch.key}
+                paused={paused}
+                onSceneReady={(controls) => {
+                  touchControlRef.current = controls;
+                }}
+                config={{
+                  mode: activeMatch.mode,
+                  p1Char: activeMatch.p1Char,
+                  p2Char: activeMatch.p2Char,
+                  arenaId: activeMatch.arenaId,
+                  difficulty: activeMatch.difficulty,
+                  isBossFight: activeMatch.isBossFight,
+                  localSlot: activeMatch.localSlot,
+                  initialMatchState: activeMatch.initialMatchState,
+                  onHudUpdate: setHudState,
+                  onMatchEnd: handleMatchEnd,
+                }}
+              />
+            </ErrorBoundary>
 
             {onlineBanner && (
               <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-lg">
