@@ -95,13 +95,17 @@ export class FightScene extends Phaser.Scene {
   private serverTargetState: MatchState | null = null;
   private socketBound = false;
 
-  constructor() {
+  constructor(initialConfig?: FightSceneConfig) {
     super('FightScene');
+    if (initialConfig) {
+      this.cfg = initialConfig;
+    }
   }
 
-  init(data: FightSceneConfig): void {
-    this.cfg = data;
-    this.paused = false;
+  init(data?: FightSceneConfig): void {
+    if (data && 'mode' in data) {
+      this.cfg = data;
+    }
     this.matchEndedSent = false;
     this.accumulator = 0;
     this.startedAtMs = performance.now();
@@ -113,6 +117,7 @@ export class FightScene extends Phaser.Scene {
   }
 
   create(): void {
+    if (!this.cfg) return;
     this.cameras.main.setBounds(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
     this.matchState =
       this.cfg.initialMatchState
@@ -143,6 +148,7 @@ export class FightScene extends Phaser.Scene {
       this.bindOnlineListeners();
     }
 
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.shutdown());
     this.cfg.onHudUpdate(structuredClone(this.matchState));
   }
 
@@ -202,8 +208,15 @@ export class FightScene extends Phaser.Scene {
   };
 
   setPaused(paused: boolean): void {
-    if (this.cfg.mode === 'online') return; // Online server stays authoritative
+    if (this.cfg?.mode === 'online') {
+      this.paused = false;
+      return; // Online server stays authoritative
+    }
     this.paused = paused;
+  }
+
+  isPaused(): boolean {
+    return this.paused;
   }
 
   setTouchInput(slot: 0 | 1, patch: Partial<InputState>): void {
