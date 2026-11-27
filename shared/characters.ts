@@ -3,9 +3,9 @@ import { CharacterDef, CharacterId } from './types.js';
 export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   vikas_guru: {
     id: 'vikas_guru',
-    name: 'Vikas Guru',
-    title: 'The Supreme Orator',
-    parodyTag: '56-Inch Rhetoric Master',
+    name: 'Mitron',
+    title: 'Pradhan Orator',
+    parodyTag: '56-Inch Mitron Master',
     bio: 'Commands prime-time teleprompters and golden microphones. Unleashes hypnotic Sanskrit-flavored megaspeeches that stun the opposition.',
     specialName: 'MITRON MEGA-SPEECH',
     specialSubtitle: 'Angein Ghatram Nainave Aatram Nyaye Na Rajyam!',

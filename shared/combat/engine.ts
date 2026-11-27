@@ -204,7 +204,7 @@ function startAttack(
       characterId: fighter.characterId,
       title: def.specialName,
       subtitle: def.specialSubtitle,
-      framesLeft: 75,
+      framesLeft: fighter.characterId === 'vikas_guru' ? 180 : 95,
     };
     state.hitstopFrames = 10;
     state.events.push({
@@ -276,7 +276,12 @@ function spawnSpecialEffects(state: MatchState, fighter: FighterState): void {
   });
 
   if (def.specialKind === 'projectile') {
-    state.projectiles.push(makeProj(0, 62, -92, dir * 13.2, 0, 38, baseDamage, 100));
+    if (fighter.characterId === 'vikas_guru') {
+      state.projectiles.push(makeProj(0, 66, -96, dir * 13.5, 0, 44, Math.round(baseDamage * 0.72), 110));
+      state.projectiles.push(makeProj(1, 24, -84, dir * 10.5, 0, 32, Math.round(baseDamage * 0.48), 125));
+    } else {
+      state.projectiles.push(makeProj(0, 62, -92, dir * 13.2, 0, 38, baseDamage, 100));
+    }
   } else if (def.specialKind === 'barrage') {
     state.projectiles.push(makeProj(0, 56, -102, dir * 14.5, -1.0, 28, Math.round(baseDamage * 0.62), 95));
     state.projectiles.push(makeProj(1, 28, -68, dir * 11.5, 0.4, 28, Math.round(baseDamage * 0.62), 115));
