@@ -446,13 +446,17 @@ export function drawProjectile(
     g.fillStyle(0xfef08a, 0.5);
     g.fillCircle(x, y, radius * 0.28);
   } else if (kind === 'gold_potato') {
+    g.fillStyle(0xb45309, 1);
+    g.fillEllipse(x, y, radius * 1.48, radius * 1.06);
     g.fillStyle(0xfacc15, 1);
-    g.fillEllipse(x, y, radius * 1.4, radius * 1.0);
-    g.lineStyle(3, 0xfef08a, 0.9);
-    g.strokeCircle(x, y, radius * 0.9);
+    g.fillEllipse(x - 3, y - 3, radius * 1.32, radius * 0.92);
+    g.fillStyle(0xfef08a, 0.85);
+    g.fillEllipse(x - 8, y - 8, radius * 0.52, radius * 0.28);
+    g.lineStyle(2.5, 0x78350f, 0.9);
+    g.strokeEllipse(x, y, radius * 1.45, radius * 1.04);
   } else if (kind === 'broom_cyclone') {
-    g.fillStyle(0x22d3ee, 0.4);
-    g.fillCircle(x, y, radius);
+    g.fillStyle(0x22d3ee, 0.35);
+    g.fillCircle(x, y, radius * 1.08);
     g.lineStyle(4, 0xfde047, 0.95);
     const a = timeSec * 16;
     g.lineBetween(
@@ -461,16 +465,35 @@ export function drawProjectile(
       x - Math.cos(a) * radius,
       y - Math.sin(a) * radius
     );
+    g.lineStyle(3, 0x92400e, 0.9);
+    g.lineBetween(
+      x + Math.cos(a + 1.2) * radius * 0.8,
+      y + Math.sin(a + 1.2) * radius * 0.8,
+      x - Math.cos(a + 1.2) * radius * 0.8,
+      y - Math.sin(a + 1.2) * radius * 0.8
+    );
   } else if (kind === 'chappal_spin') {
-    g.fillStyle(0x0ea5e9, 0.95);
-    g.fillEllipse(x, y, radius * 1.6, radius * 0.8);
-    g.lineStyle(3, 0xf8fafc, 0.9);
-    g.strokeCircle(x, y, radius);
+    g.fillStyle(0x0284c7, 0.98);
+    g.fillEllipse(x, y, radius * 1.65, radius * 0.84);
+    g.lineStyle(3, 0xf8fafc, 0.95);
+    g.strokeEllipse(x, y, radius * 1.5, radius * 0.72);
+    g.lineStyle(4, 0x38bdf8, 0.9);
+    g.lineBetween(x - radius * 0.3, y - radius * 0.2, x + radius * 0.35, y);
+    g.lineBetween(x - radius * 0.3, y + radius * 0.2, x + radius * 0.35, y);
   } else if (kind === 'lantern_fire') {
-    g.fillStyle(0xf97316, 0.85);
-    g.fillCircle(x, y, radius);
-    g.fillStyle(0xfef08a, 0.9);
-    g.fillCircle(x, y, radius * 0.55);
+    g.fillStyle(0xef4444, 0.65);
+    g.fillCircle(x, y, radius * 1.15);
+    g.fillStyle(0xf97316, 0.9);
+    g.fillCircle(x, y, radius * 0.88);
+    g.fillStyle(0xfef08a, 0.95);
+    g.fillCircle(x - 3, y - 3, radius * 0.48);
+  } else if (kind === 'bulldozer_dash') {
+    g.fillStyle(0xfacc15, 0.95);
+    g.fillRoundedRect(x - radius, y - radius * 0.7, radius * 1.6, radius * 1.2, 6);
+    g.fillStyle(0x334155, 1);
+    g.fillRect(x + radius * 0.5, y - radius * 0.8, radius * 0.4, radius * 1.35);
+    g.lineStyle(3, 0xf97316, 0.9);
+    g.strokeCircle(x, y, radius * 1.15);
   } else if (kind === 'ordinance_meteor') {
     g.fillStyle(0x7e22ce, 0.9);
     g.fillCircle(x, y, radius);

@@ -201,18 +201,19 @@ export class ArenaRenderer {
 
     // Animate arena-specific elements
     if (this.arenaId === 'parliament') {
-      // Animated MP crowd silhouettes bobbing in gallery
-      g.fillStyle(0x1e1b18, 0.85);
+      // Animated MP crowd silhouettes bobbing in gallery with colorful kurtas/waistcoats
+      const mpColors = [0xf8fafc, 0xf97316, 0x0284c7, 0x16a34a, 0xe2e8f0];
       for (let i = 0; i < 18; i++) {
         const cx = 110 + i * 62;
         const bob = Math.sin(timeSec * 5 + i * 1.3) * 5;
-        g.fillCircle(cx, 540 + bob, 14);
-        g.fillRoundedRect(cx - 16, 554 + bob, 32, 48, 6);
+        g.fillStyle(0x8d5524, 0.85);
+        g.fillCircle(cx, 540 + bob, 13);
+        g.fillStyle(mpColors[i % mpColors.length], 0.55);
+        g.fillRoundedRect(cx - 16, 554 + bob, 32, 48, 7);
         if (i % 3 === 0) {
           // Waving placard
           g.fillStyle(0xfef3c7, 0.9);
           g.fillRect(cx + 8, 505 + bob, 26, 18);
-          g.fillStyle(0x1e1b18, 0.85);
         }
       }
       // Drifting paper bills
@@ -259,7 +260,7 @@ export class ArenaRenderer {
         g.fillCircle(605 + Math.sin(timeSec * 3 + s) * 10, 468 - t * 65, 8 + t * 14);
       }
 
-      // Auto-rickshaw cruising in background!
+      // Auto-rickshaw cruising in background with windshield & headlight glow
       this.rickshawX += 2.1;
       if (this.rickshawX > STAGE_WIDTH + 160) this.rickshawX = -180;
       const rx = this.rickshawX;
@@ -268,11 +269,15 @@ export class ArenaRenderer {
       g.fillRoundedRect(rx, ry - 48, 108, 62, 14);
       g.fillStyle(0xfacc15, 1);
       g.fillRoundedRect(rx + 6, ry - 56, 92, 28, 10);
+      g.fillStyle(0x38bdf8, 0.75);
+      g.fillRoundedRect(rx + 66, ry - 48, 28, 22, 4);
       g.fillStyle(0x0f172a, 1);
       g.fillCircle(rx + 20, ry + 18, 14);
       g.fillCircle(rx + 88, ry + 18, 14);
       g.fillStyle(0xfef08a, 0.7);
       g.fillCircle(rx + 108, ry - 8, 9);
+      lg.fillStyle(0xfef08a, 0.16);
+      lg.fillTriangle(rx + 108, ry - 8, rx + 210, ry - 30, rx + 210, ry + 18);
     } else {
       // Sweeping stage spotlights
       for (let i = 0; i < 3; i++) {
