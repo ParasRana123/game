@@ -12,10 +12,12 @@ import {
   Sparkles,
   Wifi,
 } from 'lucide-react';
-import { PLAYABLE_CHARACTERS, BOSS_CHARACTER } from '@shared/characters';
+import { CHARACTERS, PLAYABLE_CHARACTERS, BOSS_CHARACTER } from '@shared/characters';
 import { ARENA_LIST } from '@shared/arenas';
 import { CharacterId } from '@shared/types';
 import { AudioManager } from '@/audio/AudioManager';
+import { drawShadedCapsule, shadeHex } from '@/game/rendering/CanvasArtHelpers';
+import { paintDetailedHeadCanvas } from '@/game/rendering/FighterHeadBaker';
 import { FighterPortrait } from './FighterPortrait';
 import { AudioControls } from './AudioControls';
 
@@ -46,12 +48,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [friendMenuOpen, setFriendMenuOpen] = useState(false);
   const [previewChar, setPreviewChar] = useState<CharacterId>('vikas_guru');
 
-  // Animated background sparring fighters canvas
+  // Animated background sparring fighters canvas (2.5D shaded Mitron vs Muffler Man)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const p1Head = paintDetailedHeadCanvas(CHARACTERS.vikas_guru, 'fierce', 120);
+    const p2Head = paintDetailedHeadCanvas(CHARACTERS.muffler_man, 'fierce', 120);
 
     let raf = 0;
     const render = (tMs: number) => {
@@ -62,88 +67,95 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.clearRect(0, 0, w, h);
 
       // Subtle arena grid floor
-      const floorY = h * 0.82;
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.14)';
+      const floorY = h * 0.84;
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.16)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(0, floorY);
       ctx.lineTo(w, floorY);
       ctx.stroke();
 
-      // Sparring Fighter A (Saffron Orator)
-      const p1x = w * 0.28 + Math.sin(t * 1.9) * 65;
-      const p1y = floorY - Math.abs(Math.sin(t * 2.8)) * 28;
-      const p1Punch = Math.sin(t * 5.2) > 0.65;
+      const p1x = w * 0.27 + Math.sin(t * 1.9) * 58;
+      const p1y = floorY - Math.abs(Math.sin(t * 2.8)) * 26;
+      const p1Attack = Math.sin(t * 5.2) > 0.6;
 
-      // Sparring Fighter B (Muffler Cyclone)
-      const p2x = w * 0.72 - Math.sin(t * 1.9) * 65;
-      const p2y = floorY - Math.abs(Math.cos(t * 2.5)) * 34;
-      const p2Kick = Math.cos(t * 4.8) > 0.68;
+      const p2x = w * 0.73 - Math.sin(t * 1.9) * 58;
+      const p2y = floorY - Math.abs(Math.cos(t * 2.5)) * 30;
+      const p2Attack = Math.cos(t * 4.8) > 0.62;
 
-      const drawSil = (
+      const drawSparFighter = (
         x: number,
         y: number,
         dir: number,
-        color: string,
+        headImg: HTMLCanvasElement,
+        primary: string,
+        secondary: string,
         accent: string,
         attacking: boolean
       ) => {
         ctx.save();
         ctx.translate(x, y);
-        ctx.globalAlpha = 0.42;
+        ctx.scale(dir, 1);
+        ctx.globalAlpha = 0.56;
 
-        // Aura
-        const grad = ctx.createRadialGradient(0, -68, 8, 0, -68, 84);
+        // Aura glow
+        const grad = ctx.createRadialGradient(0, -76, 8, 0, -76, 94);
         grad.addColorStop(0, accent);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(0, -68, 84, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Body
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.roundRect(-22, -104, 44, 58, 10);
-        ctx.fill();
-
-        // Head
-        ctx.fillStyle = '#e2b48d';
-        ctx.beginPath();
-        ctx.arc(0, -124, 18, 0, Math.PI * 2);
+        ctx.arc(0, -76, 94, 0, Math.PI * 2);
         ctx.fill();
 
         // Legs
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
+        drawShadedCapsule(ctx, -10, -56, -16, -4, 11, 8, secondary);
+        drawShadedCapsule(
+          ctx,
+          10,
+          -56,
+          attacking ? 46 : 16,
+          attacking ? -40 : -4,
+          11,
+          8,
+          secondary
+        );
+
+        // Shaded Torso
+        const tGrad = ctx.createLinearGradient(-22, -112, 22, -52);
+        tGrad.addColorStop(0, shadeHex(primary, 16));
+        tGrad.addColorStop(1, shadeHex(primary, -24));
+        ctx.fillStyle = tGrad;
         ctx.beginPath();
-        ctx.moveTo(-10, -48);
-        ctx.lineTo(-16, 0);
-        ctx.moveTo(10, -48);
-        ctx.lineTo(attacking ? dir * 42 : 16, attacking ? -32 : 0);
-        ctx.stroke();
+        ctx.roundRect(-24, -112, 48, 60, 12);
+        ctx.fill();
 
         // Attacking Arm + Shockwave
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 10;
-        ctx.beginPath();
-        ctx.moveTo(0, -88);
-        ctx.lineTo(dir * (attacking ? 64 : 32), attacking ? -90 : -68);
-        ctx.stroke();
+        drawShadedCapsule(
+          ctx,
+          8,
+          -100,
+          attacking ? 64 : 30,
+          attacking ? -96 : -70,
+          10,
+          7.5,
+          primary
+        );
+
+        // 2.5D Shaded Head
+        ctx.drawImage(headImg, -36, -166, 72, 72);
 
         if (attacking) {
           ctx.strokeStyle = accent;
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.arc(dir * 72, -88, 18 + (t * 40) % 24, 0, Math.PI * 2);
+          ctx.arc(74, -96, 18 + (t * 42) % 26, 0, Math.PI * 2);
           ctx.stroke();
         }
         ctx.restore();
       };
 
-      drawSil(p1x, p1y, 1, '#f97316', '#facc15', p1Punch);
-      drawSil(p2x, p2y, -1, '#0284c7', '#38bdf8', p2Kick);
+      drawSparFighter(p1x, p1y, 1, p1Head, '#f97316', '#fef3c7', '#facc15', p1Attack);
+      drawSparFighter(p2x, p2y, -1, p2Head, '#0284c7', '#334155', '#38bdf8', p2Attack);
 
       raf = requestAnimationFrame(render);
     };
