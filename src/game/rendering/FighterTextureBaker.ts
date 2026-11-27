@@ -45,9 +45,13 @@ export function ensureFighterTextures(
     prop: `${prefix}_prop`,
   };
 
-  registerCanvas(scene, keys.headNeutral, paintDetailedHeadCanvas(def, 'neutral', 120));
-  registerCanvas(scene, keys.headFierce, paintDetailedHeadCanvas(def, 'fierce', 120));
-  registerCanvas(scene, keys.headHurt, paintDetailedHeadCanvas(def, 'hurt', 120));
+  if (def.portraitImage) {
+    bakePhotoHeadTextures(scene, def, keys);
+  } else {
+    registerCanvas(scene, keys.headNeutral, paintDetailedHeadCanvas(def, 'neutral', 120));
+    registerCanvas(scene, keys.headFierce, paintDetailedHeadCanvas(def, 'fierce', 120));
+    registerCanvas(scene, keys.headHurt, paintDetailedHeadCanvas(def, 'hurt', 120));
+  }
   registerCanvas(scene, keys.torso, bakeTorsoCanvas(def));
   registerCanvas(scene, keys.upperArm, bakeUpperArmCanvas(def));
   registerCanvas(scene, keys.forearm, bakeForearmAndFistCanvas(def));
@@ -363,6 +367,110 @@ function bakePropCanvas(def: CharacterDef): HTMLCanvasElement {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
+  } else if (def.propType === 'megaphone') {
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.moveTo(22, 46);
+    ctx.lineTo(54, 18);
+    ctx.lineTo(60, 42);
+    ctx.lineTo(26, 52);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#090d16';
+    ctx.stroke();
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(16, 46, 10, 12);
   }
   return canvas;
+}
+
+function paintPhotoHeadFrame(
+  def: CharacterDef,
+  sourceImg: HTMLImageElement | HTMLCanvasElement | null,
+  expression: 'neutral' | 'fierce' | 'hurt'
+): HTMLCanvasElement {
+  const [canvas, ctx] = makeCanvas(120, 120);
+  const { skin, accent } = def.palette;
+
+  // Shaded neck
+  const neckGrad = ctx.createLinearGradient(0, 74, 0, 104);
+  neckGrad.addColorStop(0, shadeHex(skin, -24));
+  neckGrad.addColorStop(1, shadeHex(skin, -4));
+  ctx.fillStyle = neckGrad;
+  ctx.beginPath();
+  ctx.roundRect(48, 76, 24, 24, 6);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#090d16';
+  ctx.stroke();
+
+  // Clip head oval/circle and draw uploaded photo
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(58, 53, 35, 38, 0, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (sourceImg) {
+    ctx.drawImage(sourceImg, 18, 12, 80, 82);
+  } else {
+    ctx.fillStyle = skin;
+    ctx.fillRect(20, 12, 76, 82);
+  }
+
+  if (expression === 'fierce') {
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.16)';
+    ctx.fillRect(0, 0, 120, 120);
+  } else if (expression === 'hurt') {
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.28)';
+    ctx.fillRect(0, 0, 120, 120);
+  }
+  ctx.restore();
+
+  // Crisp silhouette border
+  ctx.lineWidth = expression === 'fierce' ? 3.2 : 2.5;
+  ctx.strokeStyle = expression === 'fierce' ? accent : '#0b101d';
+  ctx.beginPath();
+  ctx.ellipse(58, 53, 35, 38, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  return canvas;
+}
+
+function bakePhotoHeadTextures(
+  scene: Phaser.Scene,
+  def: CharacterDef,
+  keys: FighterTextureKeys
+): void {
+  const rawKey = `${def.id}_photo_raw`;
+  const source = scene.textures.exists(rawKey)
+    ? (scene.textures.get(rawKey).getSourceImage() as HTMLImageElement)
+    : null;
+
+  registerCanvas(scene, keys.headNeutral, paintPhotoHeadFrame(def, source, 'neutral'));
+  registerCanvas(scene, keys.headFierce, paintPhotoHeadFrame(def, source, 'fierce'));
+  registerCanvas(scene, keys.headHurt, paintPhotoHeadFrame(def, source, 'hurt'));
+
+  if (!source && def.portraitImage) {
+    const img = new Image();
+    img.onload = () => {
+      const updateTex = (k: string, expr: 'neutral' | 'fierce' | 'hurt') => {
+        const tex = scene.textures.get(k);
+        if (tex && tex.getSourceImage() instanceof HTMLCanvasElement) {
+          const targetCanvas = tex.getSourceImage() as HTMLCanvasElement;
+          const fresh = paintPhotoHeadFrame(def, img, expr);
+          const ctx = targetCanvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+            ctx.drawImage(fresh, 0, 0);
+            (tex as Phaser.Textures.CanvasTexture).refresh();
+          }
+        }
+      };
+      updateTex(keys.headNeutral, 'neutral');
+      updateTex(keys.headFierce, 'fierce');
+      updateTex(keys.headHurt, 'hurt');
+    };
+    img.src = def.portraitImage;
+  }
 }

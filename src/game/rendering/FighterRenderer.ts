@@ -394,6 +394,16 @@ export class FighterRenderer {
       }
     }
 
+    if (s.characterId === 'hakla' && s.action === 'special') {
+      const cx = 0;
+      const cy = -98 * scale;
+      for (let r = 0; r < 4; r++) {
+        const phase = (timeSec * 4.2 + r * 0.25) % 1;
+        g.lineStyle(3.5, r % 2 === 0 ? 0xec4899 : 0xfacc15, (1 - phase) * 0.92);
+        g.strokeCircle(cx, cy, 28 + phase * 90);
+      }
+    }
+
     if (s.superArmorFrames > 0) {
       g.lineStyle(4, 0xfacc15, 0.85);
       g.strokeRoundedRect(-42 * scale, -162 * scale, 84 * scale, 162 * scale, 20);
@@ -494,6 +504,16 @@ export function drawProjectile(
     g.fillRect(x + radius * 0.5, y - radius * 0.8, radius * 0.4, radius * 1.35);
     g.lineStyle(3, 0xf97316, 0.9);
     g.strokeCircle(x, y, radius * 1.15);
+  } else if (kind === 'hakla_sonic_wave') {
+    const pulse = 1 + Math.sin(timeSec * 24) * 0.14;
+    g.fillStyle(0xec4899, 0.28);
+    g.fillCircle(x, y, radius * 1.15 * pulse);
+    g.lineStyle(5, 0xec4899, 0.95);
+    g.strokeCircle(x, y, radius * pulse);
+    g.lineStyle(3.5, 0xfacc15, 0.92);
+    g.strokeCircle(x, y, radius * 0.65);
+    g.fillStyle(0xffffff, 0.6);
+    g.fillCircle(x, y, radius * 0.28);
   } else if (kind === 'ordinance_meteor') {
     g.fillStyle(0x7e22ce, 0.9);
     g.fillCircle(x, y, radius);

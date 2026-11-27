@@ -110,6 +110,12 @@ export class FightScene extends Phaser.Scene {
     this.serverTargetState = null;
   }
 
+  preload(): void {
+    if (!this.textures.exists('hakla_photo_raw')) {
+      this.load.image('hakla_photo_raw', '/assets/fighters/hakla.png');
+    }
+  }
+
   create(): void {
     if (!this.cfg) return;
     this.cameras.main.setBounds(0, 0, STAGE_WIDTH, STAGE_HEIGHT);
