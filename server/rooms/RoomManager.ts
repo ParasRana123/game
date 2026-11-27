@@ -439,4 +439,11 @@ export class RoomManager {
     if (active.reconnectTimers[1]) clearTimeout(active.reconnectTimers[1]);
     this.rooms.delete(code);
   }
+
+  dispose(): void {
+    for (const code of [...this.rooms.keys()]) {
+      this.destroyRoom(code);
+    }
+    this.socketToRoom.clear();
+  }
 }
