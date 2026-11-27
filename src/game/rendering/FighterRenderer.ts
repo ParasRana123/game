@@ -1,29 +1,80 @@
 import Phaser from 'phaser';
 import { CHARACTERS } from '@shared/characters';
 import { FighterState, ProjectileState } from '@shared/types';
+import { ensureFighterTextures, FighterTextureKeys } from './FighterTextureBaker';
 
 function hexNum(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
 }
 
 export class FighterRenderer {
-  private container: Phaser.GameObjects.Container;
-  private graphics: Phaser.GameObjects.Graphics;
+  private root: Phaser.GameObjects.Container;
+  private rig: Phaser.GameObjects.Container;
+  private fxGfx: Phaser.GameObjects.Graphics;
   private shadow: Phaser.GameObjects.Ellipse;
   private nameTag: Phaser.GameObjects.Text;
+  private keys: FighterTextureKeys;
+
+  private backThigh: Phaser.GameObjects.Image;
+  private backShin: Phaser.GameObjects.Image;
+  private backUpperArm: Phaser.GameObjects.Image;
+  private backForearm: Phaser.GameObjects.Image;
+  private torso: Phaser.GameObjects.Image;
+  private head: Phaser.GameObjects.Image;
+  private frontThigh: Phaser.GameObjects.Image;
+  private frontShin: Phaser.GameObjects.Image;
+  private frontUpperArm: Phaser.GameObjects.Image;
+  private frontForearm: Phaser.GameObjects.Image;
+  private prop: Phaser.GameObjects.Image;
+
   private renderX: number;
   private renderY: number;
 
   constructor(private scene: Phaser.Scene, initial: FighterState) {
     const def = CHARACTERS[initial.characterId];
+    this.keys = ensureFighterTextures(scene, initial.characterId);
     this.renderX = initial.x;
     this.renderY = initial.y;
 
-    this.shadow = scene.add.ellipse(initial.x, 616, 74, 18, 0x000000, 0.45).setDepth(9);
-    this.container = scene.add.container(initial.x, initial.y).setDepth(12);
-    this.graphics = scene.add.graphics();
+    this.shadow = scene.add.ellipse(initial.x, 616, 86, 20, 0x000000, 0.5).setDepth(9);
+    this.root = scene.add.container(initial.x, initial.y).setDepth(12);
+    this.fxGfx = scene.add.graphics();
+    this.rig = scene.add.container(0, 0);
+
+    // Skeletal layers ordered back-to-front for natural 2.5D overlap
+    this.backThigh = scene.add.image(0, 0, this.keys.thigh).setOrigin(0.5, 0.22);
+    this.backShin = scene.add.image(0, 0, this.keys.shin).setOrigin(0.41, 0.18);
+    this.backUpperArm = scene.add.image(0, 0, this.keys.upperArm).setOrigin(0.5, 0.22);
+    this.backForearm = scene.add.image(0, 0, this.keys.forearm).setOrigin(0.5, 0.18);
+
+    this.torso = scene.add.image(0, 0, this.keys.torso).setOrigin(0.5, 0.88);
+    this.head = scene.add.image(0, 0, this.keys.headNeutral).setOrigin(0.48, 0.72);
+
+    this.frontThigh = scene.add.image(0, 0, this.keys.thigh).setOrigin(0.5, 0.22);
+    this.frontShin = scene.add.image(0, 0, this.keys.shin).setOrigin(0.41, 0.18);
+    this.frontUpperArm = scene.add.image(0, 0, this.keys.upperArm).setOrigin(0.5, 0.22);
+    this.frontForearm = scene.add.image(0, 0, this.keys.forearm).setOrigin(0.5, 0.18);
+    this.prop = scene.add.image(0, 0, this.keys.prop).setOrigin(0.32, 0.72);
+
+    this.rig.add([
+      this.backUpperArm,
+      this.backForearm,
+      this.backThigh,
+      this.backShin,
+      this.torso,
+      this.head,
+      this.frontThigh,
+      this.frontShin,
+      this.frontUpperArm,
+      this.frontForearm,
+      this.prop,
+    ]);
+
+    const rigScale = def.isBoss ? 1.12 : 1.0;
+    this.rig.setScale(rigScale);
+
     this.nameTag = scene.add
-      .text(0, -176, def.name.toUpperCase(), {
+      .text(0, -184 * rigScale, def.name.toUpperCase(), {
         fontFamily: 'Chakra Petch, sans-serif',
         fontSize: '13px',
         fontStyle: 'bold',
@@ -33,443 +84,346 @@ export class FighterRenderer {
       })
       .setOrigin(0.5);
 
-    this.container.add([this.graphics, this.nameTag]);
+    this.root.add([this.fxGfx, this.rig, this.nameTag]);
   }
 
   update(state: FighterState, timeSec: number, groundY: number, lerpFactor = 0.55): void {
-    // Smooth interpolation for crisp 60fps visuals
     this.renderX = Phaser.Math.Linear(this.renderX, state.x, lerpFactor);
     this.renderY = Phaser.Math.Linear(this.renderY, state.y, lerpFactor);
-    this.container.setPosition(this.renderX, this.renderY);
+    this.root.setPosition(this.renderX, this.renderY);
 
     const heightAboveGround = Math.max(0, groundY - this.renderY);
     const shadowScale = Math.max(0.4, 1 - heightAboveGround / 280);
     this.shadow.setPosition(this.renderX, groundY + 5);
     this.shadow.setScale(shadowScale, shadowScale);
 
-    this.drawFighter(state, timeSec);
+    this.animateRig(state, timeSec);
   }
 
-  private drawFighter(s: FighterState, timeSec: number): void {
+  private animateRig(s: FighterState, timeSec: number): void {
     const def = CHARACTERS[s.characterId];
-    const g = this.graphics;
-    g.clear();
-
-    const dir = s.facing;
-    const scale = def.isBoss ? 1.14 : 1.0;
-    const skin = hexNum(def.palette.skin);
-    const primary = hexNum(def.palette.primary);
-    const secondary = hexNum(def.palette.secondary);
+    const scale = def.isBoss ? 1.12 : 1.0;
     const accent = hexNum(def.palette.accent);
-    const hair = hexNum(def.palette.hair);
     const aura = hexNum(def.palette.aura);
 
-    // Aura glow when full meter or special active
-    if (s.meter >= 100 || s.action === 'special') {
-      const pulse = 0.28 + Math.sin(timeSec * 12) * 0.14;
-      g.fillStyle(aura, s.action === 'special' ? 0.45 : pulse);
-      g.fillEllipse(0, -78 * scale, 92 * scale, 165 * scale);
-      g.lineStyle(3, accent, 0.8);
-      g.strokeEllipse(0, -78 * scale, 96 * scale, 170 * scale);
+    // Flip skeletal rig cleanly along X so right-facing baked art faces opponent
+    this.rig.scaleX = s.facing * scale;
+    this.rig.scaleY = scale;
+
+    // Select dynamic facial expression texture
+    const headTex =
+      s.action === 'hitstun' || s.action === 'knockdown' || s.action === 'defeat'
+        ? this.keys.headHurt
+        : s.action === 'punch' ||
+          s.action === 'kick' ||
+          s.action === 'uppercut' ||
+          s.action === 'special' ||
+          s.action === 'victory'
+        ? this.keys.headFierce
+        : this.keys.headNeutral;
+    if (this.head.texture.key !== headTex) {
+      this.head.setTexture(headTex);
     }
 
-    // Dedicated Mitron Chakra/Mandala Aura during Special Attack
-    if (s.characterId === 'vikas_guru' && s.action === 'special') {
-      const cx = 0;
-      const cy = -94 * scale;
-      const haloR = 72 + Math.sin(timeSec * 16) * 8;
-      g.lineStyle(3, 0xfacc15, 0.9);
-      g.strokeCircle(cx, cy, haloR);
-      g.lineStyle(2, 0xf97316, 0.75);
-      g.strokeCircle(cx, cy, haloR * 0.72);
-      for (let i = 0; i < 12; i++) {
-        const ang = timeSec * 4.5 + (i / 12) * Math.PI * 2;
-        g.lineStyle(3, i % 2 === 0 ? 0xfacc15 : 0xf97316, 0.85);
-        g.lineBetween(
-          cx + Math.cos(ang) * (haloR * 0.48),
-          cy + Math.sin(ang) * (haloR * 0.48),
-          cx + Math.cos(ang) * (haloR + 12),
-          cy + Math.sin(ang) * (haloR + 12)
-        );
-      }
-    }
-
-    // Super armor golden outline
-    if (s.superArmorFrames > 0) {
-      g.lineStyle(4, 0xfacc15, 0.85);
-      g.strokeRoundedRect(-38 * scale, -156 * scale, 76 * scale, 156 * scale, 18);
-    }
-
-    // Pose kinematics
-    let bob = Math.sin(timeSec * 6 + s.playerIndex) * 2.5;
-    let torsoLean = 0;
-    let crouchFactor = 1.0;
-    let frontArmAngle = 0.2;
-    let backArmAngle = -0.35;
-    let frontLegAngle = 0.1;
-    let backLegAngle = -0.1;
+    // Joint kinematics (angles in radians, local to right-facing rig)
+    let hipY = -64;
+    let torsoRot = 0.04;
+    let headRot = 0;
+    let fThighRot = -0.22;
+    let fShinRot = 0.24;
+    let bThighRot = 0.25;
+    let bShinRot = 0.08;
+    let fShoulderRot = -0.35;
+    let fElbowRot = -1.15;
+    let bShoulderRot = 0.22;
+    let bElbowRot = -0.95;
     let hitFlash = false;
 
+    const breathe = Math.sin(timeSec * 5.2 + s.playerIndex) * 2.2;
+    hipY += breathe;
+
     switch (s.action) {
+      case 'idle':
+        fShoulderRot = -0.25 + Math.sin(timeSec * 4) * 0.05;
+        bShoulderRot = 0.28 - Math.sin(timeSec * 4) * 0.05;
+        break;
       case 'walk':
       case 'run': {
-        const freq = s.action === 'run' ? 18 : 11;
-        const swing = Math.sin(timeSec * freq) * (s.action === 'run' ? 0.65 : 0.42);
-        bob = Math.abs(Math.cos(timeSec * freq)) * -5;
-        torsoLean = s.action === 'run' ? 0.16 : 0.06;
-        frontLegAngle = swing;
-        backLegAngle = -swing;
-        frontArmAngle = -swing * 0.8;
-        backArmAngle = swing * 0.8;
+        const freq = s.action === 'run' ? 16 : 10;
+        const amp = s.action === 'run' ? 0.62 : 0.42;
+        const swing = Math.sin(timeSec * freq) * amp;
+        hipY = -66 + Math.abs(Math.cos(timeSec * freq)) * -5;
+        torsoRot = s.action === 'run' ? 0.2 : 0.08;
+        fThighRot = swing;
+        fShinRot = Math.max(0.05, -swing * 0.65 + 0.25);
+        bThighRot = -swing;
+        bShinRot = Math.max(0.05, swing * 0.65 + 0.25);
+        fShoulderRot = -swing * 0.85;
+        bShoulderRot = swing * 0.85;
         break;
       }
       case 'jump':
-        bob = 0;
-        frontLegAngle = -0.45;
-        backLegAngle = 0.35;
-        frontArmAngle = -0.7;
-        backArmAngle = -0.4;
+        hipY = -68;
+        torsoRot = 0.1;
+        fThighRot = -0.65;
+        fShinRot = 0.95;
+        bThighRot = 0.15;
+        bShinRot = 0.55;
+        fShoulderRot = -0.8;
+        bShoulderRot = -0.3;
         break;
       case 'crouch':
-        crouchFactor = 0.68;
-        bob = 0;
-        torsoLean = 0.14;
+        hipY = -44;
+        torsoRot = 0.22;
+        fThighRot = -0.95;
+        fShinRot = 1.45;
+        bThighRot = -0.55;
+        bShinRot = 1.25;
         break;
       case 'block':
-        torsoLean = -0.1;
-        frontArmAngle = -1.25;
-        backArmAngle = -1.05;
+        hipY = -58;
+        torsoRot = -0.1;
+        fShoulderRot = -1.25;
+        fElbowRot = -1.45;
+        bShoulderRot = -1.05;
+        bElbowRot = -1.35;
         break;
       case 'punch': {
-        const ext = s.movePhase === 'active' ? 1.0 : s.movePhase === 'startup' ? -0.35 : 0.3;
-        torsoLean = ext * 0.16;
-        frontArmAngle = -1.55 * ext;
-        backArmAngle = 0.35;
+        const ext = s.movePhase === 'active' ? 1.0 : s.movePhase === 'startup' ? -0.3 : 0.35;
+        torsoRot = 0.18 * ext;
+        fShoulderRot = -1.55 * ext;
+        fElbowRot = ext > 0.5 ? -0.08 : -1.1;
+        bShoulderRot = 0.45;
         break;
       }
       case 'kick': {
-        const ext = s.movePhase === 'active' ? 1.0 : s.movePhase === 'startup' ? 0.25 : 0.4;
-        torsoLean = -0.18 * ext;
-        frontLegAngle = -1.45 * ext;
-        backLegAngle = 0.2;
-        frontArmAngle = 0.5;
+        const ext = s.movePhase === 'active' ? 1.0 : s.movePhase === 'startup' ? 0.2 : 0.4;
+        hipY = -68;
+        torsoRot = -0.22 * ext;
+        fThighRot = -1.48 * ext;
+        fShinRot = ext > 0.5 ? 0.05 : 0.75;
+        bThighRot = 0.18;
+        bShinRot = 0.12;
+        fShoulderRot = 0.4;
         break;
       }
       case 'uppercut': {
-        const ext = s.movePhase === 'active' ? 1.0 : 0.3;
-        bob = -14 * ext;
-        torsoLean = 0.1;
-        frontArmAngle = -2.4 * ext;
+        const ext = s.movePhase === 'active' ? 1.0 : 0.35;
+        hipY = -74 * ext - 20 * (1 - ext);
+        torsoRot = -0.14 * ext;
+        fShoulderRot = -2.45 * ext;
+        fElbowRot = -0.45;
         break;
       }
       case 'grab':
-        torsoLean = 0.22;
-        frontArmAngle = -1.45;
-        backArmAngle = -1.35;
+        torsoRot = 0.26;
+        fShoulderRot = -1.45;
+        fElbowRot = -0.25;
+        bShoulderRot = -1.35;
+        bElbowRot = -0.25;
         break;
       case 'special':
         if (s.characterId === 'vikas_guru') {
-          bob = -18 + Math.sin(timeSec * 14) * 4;
-          torsoLean = s.movePhase === 'active' ? 0.28 : -0.14;
-          frontArmAngle = s.movePhase === 'active' ? -1.55 + Math.sin(timeSec * 18) * 0.14 : -2.75;
-          backArmAngle = s.movePhase === 'active' ? -2.25 : -0.75;
+          hipY = -80 + Math.sin(timeSec * 14) * 4;
+          torsoRot = s.movePhase === 'active' ? 0.14 : -0.12;
+          headRot = -0.1;
+          fShoulderRot = s.movePhase === 'active' ? -1.55 + Math.sin(timeSec * 18) * 0.14 : -2.6;
+          fElbowRot = -0.25;
+          bShoulderRot = s.movePhase === 'active' ? -2.25 : -0.7;
+          bElbowRot = -0.45;
         } else {
-          bob = -10;
-          torsoLean = s.movePhase === 'active' ? 0.24 : -0.12;
-          frontArmAngle = s.movePhase === 'active' ? -1.65 : -2.6;
-          backArmAngle = s.movePhase === 'active' ? -1.45 : -2.4;
+          hipY = -74;
+          torsoRot = s.movePhase === 'active' ? 0.22 : -0.14;
+          fShoulderRot = s.movePhase === 'active' ? -1.6 : -2.5;
+          fElbowRot = -0.2;
+          bShoulderRot = s.movePhase === 'active' ? -1.4 : -2.2;
         }
         break;
       case 'hitstun':
         hitFlash = s.actionFrame % 4 < 2;
-        torsoLean = -0.25;
-        frontArmAngle = 0.7;
-        backArmAngle = 0.9;
+        torsoRot = -0.26;
+        headRot = -0.22;
+        fShoulderRot = 0.5;
+        bShoulderRot = 0.7;
         break;
       case 'knockdown':
       case 'defeat':
         hitFlash = s.action === 'knockdown' && s.actionFrame % 4 < 2;
-        crouchFactor = 0.48;
-        torsoLean = -0.85;
-        frontArmAngle = 1.1;
-        backArmAngle = 0.9;
+        hipY = -28;
+        torsoRot = -1.1;
+        headRot = -0.35;
+        fThighRot = -0.3;
+        bThighRot = 0.2;
         break;
       case 'intro':
       case 'victory':
-        bob = Math.sin(timeSec * 8) * 4 - 4;
-        frontArmAngle = -2.35 + Math.sin(timeSec * 10) * 0.2;
-        backArmAngle = -0.4;
+        hipY = -66 + Math.sin(timeSec * 7) * 3;
+        fShoulderRot = -2.35 + Math.sin(timeSec * 9) * 0.18;
+        fElbowRot = -0.35;
+        bShoulderRot = 0.3;
         break;
     }
 
-    const bodyColor = hitFlash ? 0xffffff : primary;
-    const pantsColor = hitFlash ? 0xffffff : secondary;
-    const hipY = -56 * crouchFactor * scale + bob;
-    const shoulderY = hipY - 52 * crouchFactor * scale;
-    const headY = shoulderY - 26 * scale;
-    const leanX = dir * torsoLean * 28;
+    // Apply torso & head transforms
+    this.torso.setPosition(0, hipY + 8);
+    this.torso.setRotation(torsoRot);
 
-    // Back Leg
-    this.drawLimb(g, -dir * 8 * scale, hipY, dir * Math.sin(backLegAngle) * 44 * scale, 52 * crouchFactor * scale, 14 * scale, pantsColor);
-    // Front Leg
-    this.drawLimb(g, dir * 10 * scale, hipY, dir * Math.sin(frontLegAngle) * 48 * scale, 52 * crouchFactor * scale, 15 * scale, pantsColor);
+    const shoulderOffsetX = Math.sin(torsoRot) * 66;
+    const shoulderOffsetY = hipY + 8 - Math.cos(torsoRot) * 66;
 
-    // Back Arm
-    this.drawLimb(
-      g,
-      leanX - dir * 14 * scale,
-      shoulderY + 6,
-      dir * Math.sin(-backArmAngle) * 42 * scale,
-      Math.cos(backArmAngle) * 40 * scale,
-      12 * scale,
-      skin
+    this.head.setPosition(shoulderOffsetX + Math.sin(torsoRot) * 8, shoulderOffsetY - 6);
+    this.head.setRotation(torsoRot * 0.5 + headRot);
+
+    // Legs (2-bone thigh -> shin kinematics)
+    const placeLeg = (
+      thigh: Phaser.GameObjects.Image,
+      shin: Phaser.GameObjects.Image,
+      hipX: number,
+      tRot: number,
+      sRot: number
+    ) => {
+      thigh.setPosition(hipX, hipY);
+      thigh.setRotation(tRot);
+      const kneeX = hipX - Math.sin(tRot) * 34;
+      const kneeY = hipY + Math.cos(tRot) * 34;
+      shin.setPosition(kneeX, kneeY);
+      shin.setRotation(tRot + sRot);
+    };
+
+    placeLeg(this.backThigh, this.backShin, -8, bThighRot, bShinRot);
+    placeLeg(this.frontThigh, this.frontShin, 8, fThighRot, fShinRot);
+
+    // Arms (2-bone upperArm -> forearm kinematics)
+    const placeArm = (
+      upper: Phaser.GameObjects.Image,
+      fore: Phaser.GameObjects.Image,
+      sx: number,
+      sy: number,
+      uRot: number,
+      fRot: number
+    ) => {
+      upper.setPosition(sx, sy);
+      upper.setRotation(uRot);
+      const elbowX = sx - Math.sin(uRot) * 29;
+      const elbowY = sy + Math.cos(uRot) * 29;
+      fore.setPosition(elbowX, elbowY);
+      const totalRot = uRot + fRot;
+      fore.setRotation(totalRot);
+      const handX = elbowX - Math.sin(totalRot) * 32;
+      const handY = elbowY + Math.cos(totalRot) * 32;
+      return { handX, handY, totalRot };
+    };
+
+    placeArm(
+      this.backUpperArm,
+      this.backForearm,
+      shoulderOffsetX - 12,
+      shoulderOffsetY + 6,
+      bShoulderRot,
+      bElbowRot
+    );
+    const frontHand = placeArm(
+      this.frontUpperArm,
+      this.frontForearm,
+      shoulderOffsetX + 12,
+      shoulderOffsetY + 6,
+      fShoulderRot,
+      fElbowRot
     );
 
-    // Torso (Kurta / Suit / Saree)
-    g.fillStyle(bodyColor, 1);
-    g.fillRoundedRect(leanX - 24 * scale, shoulderY - 4, 48 * scale, 58 * crouchFactor * scale, 12);
-    // Waistcoat / Sash accent
-    g.fillStyle(accent, 0.92);
-    g.fillRoundedRect(leanX - 18 * scale, shoulderY, 36 * scale, 22 * crouchFactor * scale, 6);
+    this.prop.setPosition(frontHand.handX, frontHand.handY);
+    this.prop.setRotation(frontHand.totalRot + 0.55);
 
-    // Mitron saffron Nehru jacket + white kurta collar + pocket square
-    if (def.headgear === 'beard_glasses') {
-      g.fillStyle(secondary, 1);
-      g.fillTriangle(leanX - 10, shoulderY - 3, leanX + 10, shoulderY - 3, leanX, shoulderY + 18 * crouchFactor);
-      g.fillStyle(0xfef08a, 1);
-      g.fillRect(leanX + dir * 8, shoulderY + 12 * crouchFactor, 9, 5);
+    // Hit flash tint
+    const parts = [
+      this.backThigh,
+      this.backShin,
+      this.backUpperArm,
+      this.backForearm,
+      this.torso,
+      this.head,
+      this.frontThigh,
+      this.frontShin,
+      this.frontUpperArm,
+      this.frontForearm,
+    ];
+    for (const p of parts) {
+      if (hitFlash) p.setTintFill(0xffffff);
+      else p.clearTint();
     }
 
-    // Saree / Muffler / Cape flair
-    if (def.headgear === 'gandhi_cap_muffler') {
-      g.fillStyle(secondary, 1);
-      g.fillRoundedRect(leanX - 20, shoulderY - 6, 40, 14, 6);
-      g.fillRoundedRect(leanX - dir * 24, shoulderY + 4, 16, 36, 5);
-    } else if (def.headgear === 'saree_bun') {
-      g.lineStyle(8, secondary, 1);
-      g.lineBetween(leanX - dir * 18, shoulderY, leanX + dir * 18, hipY);
-    } else if (def.isBoss) {
-      // Royal cape
-      g.fillStyle(0x991b1b, 0.85);
-      g.fillTriangle(leanX - dir * 18, shoulderY, leanX - dir * 56, hipY + 34, leanX + dir * 10, hipY + 20);
+    // FX Layer (Aura, Super Armor, Mitron Chakra Mandala, Block Shield, Attack Smears)
+    const g = this.fxGfx;
+    g.clear();
+    const dir = s.facing;
+
+    if (s.meter >= 100 || s.action === 'special') {
+      const pulse = 0.26 + Math.sin(timeSec * 12) * 0.12;
+      g.fillStyle(aura, s.action === 'special' ? 0.42 : pulse);
+      g.fillEllipse(0, -82 * scale, 102 * scale, 174 * scale);
+      g.lineStyle(3, accent, 0.8);
+      g.strokeEllipse(0, -82 * scale, 108 * scale, 180 * scale);
     }
 
-    // Head
-    const hx = leanX + dir * 2 * scale;
-    const hy = headY;
-    g.fillStyle(hitFlash ? 0xffffff : skin, 1);
-    g.fillCircle(hx, hy, 22 * scale);
-    g.lineStyle(2, 0x0f172a, 0.6);
-    g.strokeCircle(hx, hy, 22 * scale);
-
-    // Character-specific Headgear, Hair, Beards, Glasses
-    this.drawHeadFeatures(g, def.headgear, hx, hy, dir, scale, hair, accent, s.action);
-
-    // Front Arm + Prop
-    const armTipX = leanX + dir * 14 * scale + dir * Math.sin(-frontArmAngle) * 46 * scale;
-    const armTipY = shoulderY + 6 + Math.cos(frontArmAngle) * 42 * scale;
-    this.drawLimb(
-      g,
-      leanX + dir * 14 * scale,
-      shoulderY + 6,
-      dir * Math.sin(-frontArmAngle) * 46 * scale,
-      Math.cos(frontArmAngle) * 42 * scale,
-      13 * scale,
-      skin
-    );
-
-    // Fist / Prop
-    g.fillStyle(skin, 1);
-    g.fillCircle(armTipX, armTipY, 8 * scale);
-    this.drawProp(g, def.propType, armTipX, armTipY, dir, scale, accent);
-
-    // Concentric sonic rings from Mitron's mic during Special Attack
     if (s.characterId === 'vikas_guru' && s.action === 'special') {
+      const cx = 0;
+      const cy = -100 * scale;
+      const haloR = 76 + Math.sin(timeSec * 16) * 8;
+      g.lineStyle(3.5, 0xfacc15, 0.92);
+      g.strokeCircle(cx, cy, haloR);
+      g.lineStyle(2.5, 0xf97316, 0.78);
+      g.strokeCircle(cx, cy, haloR * 0.72);
+      for (let i = 0; i < 12; i++) {
+        const ang = timeSec * 4.5 + (i / 12) * Math.PI * 2;
+        g.lineStyle(3, i % 2 === 0 ? 0xfacc15 : 0xf97316, 0.88);
+        g.lineBetween(
+          cx + Math.cos(ang) * (haloR * 0.48),
+          cy + Math.sin(ang) * (haloR * 0.48),
+          cx + Math.cos(ang) * (haloR + 14),
+          cy + Math.sin(ang) * (haloR + 14)
+        );
+      }
+
+      // Concentric sonic rings from Mitron's mic
+      const micWorldX = dir * frontHand.handX * scale;
+      const micWorldY = frontHand.handY * scale;
       for (let r = 0; r < 3; r++) {
         const phase = (timeSec * 3.5 + r * 0.33) % 1;
         g.lineStyle(3, r % 2 === 0 ? 0xfacc15 : 0xf97316, (1 - phase) * 0.9);
-        g.strokeCircle(armTipX + dir * 14, armTipY - 16, 12 + phase * 62);
+        g.strokeCircle(micWorldX + dir * 16, micWorldY - 12, 12 + phase * 62);
       }
     }
 
-    // Block shield visual
+    if (s.superArmorFrames > 0) {
+      g.lineStyle(4, 0xfacc15, 0.85);
+      g.strokeRoundedRect(-42 * scale, -162 * scale, 84 * scale, 162 * scale, 20);
+    }
+
     if (s.action === 'block' || s.blocking) {
       g.fillStyle(0x38bdf8, 0.25);
-      g.lineStyle(3, 0x38bdf8, 0.9);
-      g.fillRoundedRect(dir * 16, -138 * scale, 18, 118 * scale, 8);
-      g.strokeRoundedRect(dir * 16, -138 * scale, 18, 118 * scale, 8);
+      g.lineStyle(3, 0x38bdf8, 0.92);
+      g.fillRoundedRect(dir * 20, -142 * scale, 18, 122 * scale, 8);
+      g.strokeRoundedRect(dir * 20, -142 * scale, 18, 122 * scale, 8);
     }
 
-    // Active melee smear arc
-    if (s.movePhase === 'active' && (s.action === 'punch' || s.action === 'kick' || s.action === 'uppercut')) {
-      g.fillStyle(accent, 0.35);
+    if (
+      s.movePhase === 'active' &&
+      (s.action === 'punch' || s.action === 'kick' || s.action === 'uppercut')
+    ) {
+      g.fillStyle(accent, 0.38);
       if (s.action === 'kick') {
-        g.fillEllipse(dir * 52, -72, 68, 26);
+        g.fillEllipse(dir * 54, -74, 72, 26);
       } else if (s.action === 'uppercut') {
-        g.fillEllipse(dir * 40, -118, 36, 78);
+        g.fillEllipse(dir * 42, -122, 38, 82);
       } else {
-        g.fillEllipse(dir * 46, -100, 60, 22);
+        g.fillEllipse(dir * 48, -102, 64, 22);
       }
-    }
-  }
-
-  private drawLimb(
-    g: Phaser.GameObjects.Graphics,
-    sx: number,
-    sy: number,
-    dx: number,
-    dy: number,
-    thickness: number,
-    color: number
-  ): void {
-    g.lineStyle(thickness, color, 1);
-    g.lineBetween(sx, sy, sx + dx, sy + dy);
-    g.fillStyle(color, 1);
-    g.fillCircle(sx + dx, sy + dy, thickness * 0.45);
-  }
-
-  private drawHeadFeatures(
-    g: Phaser.GameObjects.Graphics,
-    headgear: string,
-    hx: number,
-    hy: number,
-    dir: number,
-    scale: number,
-    hair: number,
-    accent: number,
-    action: FighterState['action']
-  ): void {
-    // Eyes
-    const eyeX = hx + dir * 7 * scale;
-    const eyeY = hy - 3 * scale;
-    if (action === 'hitstun' || action === 'defeat' || action === 'knockdown') {
-      g.lineStyle(2.5, 0x0f172a, 1);
-      g.lineBetween(eyeX - 4, eyeY - 4, eyeX + 4, eyeY + 4);
-      g.lineBetween(eyeX + 4, eyeY - 4, eyeX - 4, eyeY + 4);
-    } else {
-      g.fillStyle(0x0f172a, 1);
-      g.fillCircle(eyeX, eyeY, 3.2 * scale);
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(eyeX + dir, eyeY - 1, 1.2 * scale);
-    }
-
-    // Mouth expression
-    if (action === 'special' || action === 'uppercut' || action === 'victory') {
-      g.fillStyle(0x7f1d1d, 1);
-      g.fillEllipse(hx + dir * 8 * scale, hy + 9 * scale, 10 * scale, 7 * scale);
-    } else {
-      g.lineStyle(2, 0x0f172a, 0.9);
-      g.lineBetween(hx + dir * 4 * scale, hy + 9 * scale, hx + dir * 12 * scale, hy + 8 * scale);
-    }
-
-    if (headgear === 'beard_glasses') {
-      // Hair + flowing white beard + round spectacles
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx, hy - 18 * scale, 38 * scale, 14 * scale);
-      g.fillTriangle(hx - 14 * scale, hy + 4, hx + 16 * scale, hy + 4, hx + dir * 4, hy + 28 * scale);
-      g.lineStyle(2.5, accent, 1);
-      g.strokeCircle(eyeX, eyeY, 7 * scale);
-    } else if (headgear === 'youth_hair') {
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx - dir * 2, hy - 17 * scale, 40 * scale, 16 * scale);
-      g.fillTriangle(hx + dir * 6, hy - 26, hx + dir * 22, hy - 16, hx, hy - 14);
-    } else if (headgear === 'gandhi_cap_muffler') {
-      // Classic white boat cap
-      g.fillStyle(0xf8fafc, 1);
-      g.fillRoundedRect(hx - 20 * scale, hy - 30 * scale, 40 * scale, 15 * scale, 6);
-      g.fillStyle(hair, 1);
-      g.fillRect(hx + dir * 3, hy + 3, 12, 3); // Mustache
-    } else if (headgear === 'saree_bun') {
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx, hy - 17 * scale, 38 * scale, 14 * scale);
-      g.fillCircle(hx - dir * 20 * scale, hy - 10 * scale, 10 * scale);
-    } else if (headgear === 'cinema_shades') {
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx, hy - 18 * scale, 40 * scale, 16 * scale);
-      g.fillStyle(0x020617, 1);
-      g.fillRoundedRect(eyeX - 10, eyeY - 6, 20, 10, 3);
-      g.lineStyle(2, accent, 1);
-      g.strokeRoundedRect(eyeX - 10, eyeY - 6, 20, 10, 3);
-    } else if (headgear === 'saffron_bald') {
-      // Tilak mark + shades
-      g.fillStyle(0xdc2626, 1);
-      g.fillRect(hx + dir * 10, hy - 14, 4, 9);
-      g.fillStyle(0x0f172a, 1);
-      g.fillRoundedRect(eyeX - 9, eyeY - 5, 18, 9, 2);
-    } else if (headgear === 'rustic_hair') {
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx, hy - 18 * scale, 42 * scale, 16 * scale);
-      g.fillRect(hx + dir * 2, hy + 3, 14, 4);
-    } else if (headgear === 'tactical_beard') {
-      g.fillStyle(hair, 1);
-      g.fillEllipse(hx, hy - 17 * scale, 38 * scale, 13 * scale);
-      g.fillRoundedRect(hx - 12 * scale, hy + 3, 28 * scale, 18 * scale, 8);
-    } else if (headgear === 'golden_crown') {
-      g.fillStyle(0xfacc15, 1);
-      g.fillTriangle(hx - 18, hy - 18, hx - 10, hy - 40, hx - 2, hy - 18);
-      g.fillTriangle(hx - 6, hy - 18, hx + 2, hy - 44, hx + 10, hy - 18);
-      g.fillTriangle(hx + 6, hy - 18, hx + 14, hy - 40, hx + 20, hy - 18);
-      g.fillStyle(0xef4444, 1);
-      g.fillCircle(hx + 2, hy - 25, 4);
-    }
-  }
-
-  private drawProp(
-    g: Phaser.GameObjects.Graphics,
-    propType: string,
-    x: number,
-    y: number,
-    dir: number,
-    scale: number,
-    accent: number
-  ): void {
-    if (propType === 'mic') {
-      g.lineStyle(4, 0x334155, 1);
-      g.lineBetween(x, y, x + dir * 12 * scale, y - 16 * scale);
-      g.fillStyle(accent, 1);
-      g.fillCircle(x + dir * 14 * scale, y - 18 * scale, 6 * scale);
-    } else if (propType === 'broom') {
-      g.lineStyle(4, 0x92400e, 1);
-      g.lineBetween(x, y, x + dir * 26 * scale, y - 22 * scale);
-      g.fillStyle(0xfde047, 1);
-      g.fillTriangle(
-        x + dir * 22 * scale,
-        y - 18 * scale,
-        x + dir * 44 * scale,
-        y - 38 * scale,
-        x + dir * 32 * scale,
-        y - 42 * scale
-      );
-    } else if (propType === 'chappal') {
-      g.fillStyle(0x38bdf8, 1);
-      g.fillEllipse(x + dir * 10, y - 6, 18, 9);
-    } else if (propType === 'lantern') {
-      g.fillStyle(0xf59e0b, 1);
-      g.fillRoundedRect(x + dir * 4, y - 4, 14, 18, 4);
-      g.fillStyle(0xfef08a, 0.9);
-      g.fillCircle(x + dir * 11, y + 5, 5);
-    } else if (propType === 'bulldozer') {
-      g.fillStyle(0xfacc15, 1);
-      g.fillRect(x + dir * 4, y - 12, 18, 14);
-      g.fillStyle(0x334155, 1);
-      g.fillRect(x + dir * 20, y - 14, 6, 18);
-    } else if (propType === 'scepter') {
-      g.lineStyle(5, 0xfacc15, 1);
-      g.lineBetween(x, y + 10, x + dir * 16, y - 34);
-      g.fillStyle(0xef4444, 1);
-      g.fillCircle(x + dir * 16, y - 36, 8);
-    } else if (propType === 'gold_bar') {
-      g.fillStyle(0xfacc15, 1);
-      g.fillRoundedRect(x + dir * 2, y - 8, 16, 10, 3);
-    } else if (propType === 'chess') {
-      g.fillStyle(0xc084fc, 0.9);
-      g.fillCircle(x + dir * 8, y - 10, 8);
     }
   }
 
   destroy(): void {
     this.shadow.destroy();
-    this.container.destroy();
+    this.root.destroy();
   }
 }
 
@@ -501,7 +455,12 @@ export function drawProjectile(
     g.fillCircle(x, y, radius);
     g.lineStyle(4, 0xfde047, 0.95);
     const a = timeSec * 16;
-    g.lineBetween(x + Math.cos(a) * radius, y + Math.sin(a) * radius, x - Math.cos(a) * radius, y - Math.sin(a) * radius);
+    g.lineBetween(
+      x + Math.cos(a) * radius,
+      y + Math.sin(a) * radius,
+      x - Math.cos(a) * radius,
+      y - Math.sin(a) * radius
+    );
   } else if (kind === 'chappal_spin') {
     g.fillStyle(0x0ea5e9, 0.95);
     g.fillEllipse(x, y, radius * 1.6, radius * 0.8);
