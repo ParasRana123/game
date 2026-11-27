@@ -160,6 +160,24 @@ VOICE_CONFIG = {
             "special": "Masterstroke Matrix! Checkmate in three moves!",
         },
     },
+    "hakla": {
+        "pitch": 1.12,
+        "rate": 1,
+        "special_rate": 0,
+        "echo": 0.32,
+        "reverb": 0.35,
+        "sting": "thunder_whip",
+        "lines": {
+            "select": "H-H-Hakla reporting for duty!",
+            "intro": "Get ready for the sonic stutter storm!",
+            "attack1": "Ha-Ha!",
+            "attack2": "B-Boom!",
+            "hit": "Arre ruko!",
+            "win": "Total Hakla supremacy!",
+            "lose": "Voice cracked mid-debate!",
+            "special": "Hakla Sonic Stutter Activated!",
+        },
+    },
     "samrat_ordinance": {
         "pitch": 0.72,
         "rate": -2,
@@ -357,8 +375,8 @@ def generate_voices():
                 out = processed
 
             out_path = os.path.join(VOICES_DIR, char_id, f"{slot}.wav")
-            # Preserve custom extracted recording for Mitron's special attack unless --force is passed
-            if char_id == "vikas_guru" and slot == "special" and os.path.exists(out_path) and "--force" not in sys.argv:
+            # Preserve custom extracted recordings for Mitron and Hakla special attacks unless --force is passed
+            if char_id in ("vikas_guru", "hakla") and slot == "special" and os.path.exists(out_path) and "--force" not in sys.argv:
                 print(f"Preserved custom recording: {char_id}/{slot}.wav")
                 continue
             write_wav_mono(out_path, out)
