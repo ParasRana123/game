@@ -246,6 +246,7 @@ export class FightScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    if (!this.cfg || !this.keys) return;
     if (Phaser.Input.Keyboard.JustDown(this.keys.f9)) {
       this.showHitboxes = !this.showHitboxes;
     }

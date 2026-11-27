@@ -10,6 +10,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ['phaser'],
+          react: ['react', 'react-dom', 'framer-motion'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
