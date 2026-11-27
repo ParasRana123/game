@@ -175,6 +175,39 @@ test('Special attack syncs full audio duration, is unblockable, deals supreme da
   assert.equal(state.fighters[1].action, 'punch', 'Opponent should be able to attack once special ends');
 });
 
+test('Hakla character has uploaded photo, extracted special WAV, and unblockable synced special', () => {
+  const hakla = PLAYABLE_CHARACTERS.find((c) => c.name === 'Hakla');
+  assert.ok(hakla, 'Hakla should exist in PLAYABLE_CHARACTERS');
+  assert.equal(hakla.portraitImage, '/assets/fighters/hakla.png');
+
+  const imgPath = path.resolve(process.cwd(), 'public', 'assets', 'fighters', 'hakla.png');
+  const wavPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', 'voices', 'hakla', 'special.wav');
+  assert.equal(fs.existsSync(imgPath), true, 'Hakla portrait image must exist');
+  assert.equal(fs.existsSync(wavPath), true, 'Hakla special.wav must exist');
+  assert.equal(fs.readFileSync(wavPath).subarray(0, 4).toString('ascii'), 'RIFF');
+
+  const state = createMatchState('hakla', 'muffler_man', 'indian_street');
+  state.phase = 'fighting';
+  state.fighters[0].x = 400;
+  state.fighters[1].x = 600;
+  state.fighters[1].hp = 940;
+  state.fighters[0].meter = 100;
+
+  stepMatchState(state, { ...emptyInput(), special: true }, { ...emptyInput(), block: true, punch: true });
+  assert.equal(state.fighters[0].action, 'special');
+  assert.equal(state.fighters[1].action, 'idle', 'Opponent cannot attack while Hakla special is active');
+
+  for (let i = 0; i < 160; i++) {
+    stepMatchState(state, emptyInput(), { ...emptyInput(), block: true, punch: true, kick: true });
+    if (state.fighters[0].action === 'special') {
+      assert.notEqual(state.fighters[1].action, 'punch');
+      assert.notEqual(state.fighters[1].action, 'kick');
+    }
+  }
+  assert.equal(state.fighters[0].action, 'special', 'Hakla special remains synced for 358 frames');
+  assert.ok(940 - state.fighters[1].hp >= 250, 'Hakla special must be unblockable with high damage');
+});
+
 test('Mitron character and extracted special WAV audio asset exist', () => {
   const mitron = PLAYABLE_CHARACTERS.find((c) => c.name === 'Mitron');
   assert.ok(mitron, 'Mitron should exist in PLAYABLE_CHARACTERS');

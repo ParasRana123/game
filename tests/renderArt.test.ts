@@ -13,8 +13,8 @@ test('CanvasArtHelpers produce valid shaded rgb and rgba strings', () => {
   assert.equal(rgba, 'rgba(250, 204, 21, 0.5)');
 });
 
-test('All 9 characters have complete palette, prop, headgear, and special durations for 2.5D baking', () => {
-  assert.equal(ALL_CHARACTERS.length, 9);
+test('All 10 characters have complete palette, prop, headgear, and special durations for 2.5D baking', () => {
+  assert.equal(ALL_CHARACTERS.length, 10);
   const headgears = new Set<string>();
   const props = new Set<string>();
 
@@ -30,6 +30,6 @@ test('All 9 characters have complete palette, prop, headgear, and special durati
     props.add(c.propType);
   }
 
-  assert.equal(headgears.size, 9, 'Every fighter should have unique headgear');
-  assert.equal(props.size, 9, 'Every fighter should have unique prop');
+  assert.equal(headgears.size, 10, 'Every fighter should have unique headgear');
+  assert.equal(props.size, 10, 'Every fighter should have unique prop');
 });
