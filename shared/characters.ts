@@ -364,7 +364,6 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialKind: 'projectile',
     specialDurationFrames: 358,
     projectileKind: 'hakla_sonic_wave',
-    portraitImage: '/assets/fighters/hakla.png',
     stats: {
       maxHp: 1030,
       walkSpeed: 5.2,

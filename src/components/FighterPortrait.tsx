@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CHARACTERS } from '@shared/characters';
 import { CharacterId } from '@shared/types';
 import { hexToRgba, shadeHex } from '@/game/rendering/CanvasArtHelpers';
 import { drawDetailedHead } from '@/game/rendering/FighterHeadBaker';
+import { getCachedPortrait3D, renderPortrait3D } from '@/game/three/Portrait3DRenderer';
 
 interface FighterPortraitProps {
   characterId: CharacterId;
@@ -19,9 +20,26 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const def = CHARACTERS[characterId];
+  const [modelUrl, setModelUrl] = useState<string | null>(() => getCachedPortrait3D(characterId));
 
   useEffect(() => {
-    if (def.portraitImage) return;
+    let cancelled = false;
+    const cached = getCachedPortrait3D(characterId);
+    if (cached) {
+      setModelUrl(cached);
+      return;
+    }
+    setModelUrl(null);
+    void renderPortrait3D(characterId).then((url) => {
+      if (!cancelled && url) setModelUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [characterId]);
+
+  useEffect(() => {
+    if (modelUrl) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -38,12 +56,10 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
 
     const { primary, secondary, accent, aura } = def.palette;
 
-    // Rounded card clipping
     ctx.beginPath();
     ctx.roundRect(3, 3, 114, 114, 20);
     ctx.clip();
 
-    // Dramatic radial fight-card backdrop
     const bgGrad = ctx.createRadialGradient(60, 44, 6, 60, 60, 74);
     bgGrad.addColorStop(0, hexToRgba(aura, 0.58));
     bgGrad.addColorStop(0.55, '#14192b');
@@ -51,17 +67,6 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, 120, 120);
 
-    // Subtle arcade diagonal speed lines
-    ctx.strokeStyle = hexToRgba(accent, 0.14);
-    ctx.lineWidth = 3;
-    for (let x = -20; x < 140; x += 18) {
-      ctx.beginPath();
-      ctx.moveTo(x, 120);
-      ctx.lineTo(x + 48, 0);
-      ctx.stroke();
-    }
-
-    // Shoulders & Detailed Attire
     const shoulderGrad = ctx.createLinearGradient(18, 76, 102, 120);
     shoulderGrad.addColorStop(0, shadeHex(primary, 18));
     shoulderGrad.addColorStop(1, shadeHex(primary, -28));
@@ -72,51 +77,17 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
     ctx.quadraticCurveTo(98, 82, 106, 120);
     ctx.closePath();
     ctx.fill();
-    ctx.lineWidth = 2.2;
-    ctx.strokeStyle = '#090d16';
-    ctx.stroke();
 
-    if (def.headgear === 'beard_glasses') {
-      // Mitron cream kurta V-collar + pocket square
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(46, 82);
-      ctx.lineTo(74, 82);
-      ctx.lineTo(60, 108);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(79, 98, 12, 6);
-    } else if (def.headgear === 'gandhi_cap_muffler') {
-      ctx.fillStyle = secondary;
-      ctx.beginPath();
-      ctx.roundRect(30, 80, 60, 16, 7);
-      ctx.fill();
-      ctx.strokeStyle = '#090d16';
-      ctx.stroke();
-    } else if (def.headgear === 'saree_bun') {
-      ctx.fillStyle = secondary;
-      ctx.beginPath();
-      ctx.moveTo(28, 88);
-      ctx.lineTo(86, 120);
-      ctx.lineTo(66, 120);
-      ctx.lineTo(20, 98);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillStyle = secondary;
-      ctx.beginPath();
-      ctx.moveTo(44, 83);
-      ctx.lineTo(76, 83);
-      ctx.lineTo(60, 106);
-      ctx.closePath();
-      ctx.fill();
-    }
+    ctx.fillStyle = secondary;
+    ctx.beginPath();
+    ctx.moveTo(44, 83);
+    ctx.lineTo(76, 83);
+    ctx.lineTo(60, 106);
+    ctx.closePath();
+    ctx.fill();
 
-    // 2.5D Shaded Head
     drawDetailedHead(ctx, def, 58, 52, def.isBoss ? 'fierce' : 'neutral');
 
-    // Card rim border
     ctx.restore();
     ctx.save();
     ctx.scale(dpr, dpr);
@@ -126,22 +97,23 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
     ctx.roundRect(3, 3, 114, 114, 20);
     ctx.stroke();
     ctx.restore();
-  }, [characterId, def]);
+  }, [characterId, def, modelUrl]);
 
-  if (def.portraitImage) {
+  if (modelUrl) {
     return (
       <div
-        className={`relative overflow-hidden rounded-2xl shadow-lg bg-slate-950 ${className}`}
+        className={`relative overflow-hidden rounded-2xl shadow-lg ${className}`}
         style={{
           width: size,
           height: size,
+          background: `radial-gradient(circle at 50% 42%, ${hexToRgba(def.palette.aura, 0.55)}, #0a0e1a 78%)`,
           border: `2.5px solid ${def.palette.accent}`,
-          boxShadow: `0 0 18px ${hexToRgba(def.palette.aura, 0.45)}`,
+          boxShadow: `0 0 16px ${hexToRgba(def.palette.aura, 0.35)}`,
           transform: flip ? 'scaleX(-1)' : undefined,
         }}
       >
         <img
-          src={def.portraitImage}
+          src={modelUrl}
           alt={def.name}
           className="w-full h-full object-cover"
           draggable={false}
