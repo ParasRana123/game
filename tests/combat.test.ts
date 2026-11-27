@@ -175,14 +175,14 @@ test('Special attack syncs full audio duration, is unblockable, deals supreme da
   assert.equal(state.fighters[1].action, 'punch', 'Opponent should be able to attack once special ends');
 });
 
-test('Hakla character has uploaded photo, extracted special WAV, and unblockable synced special', () => {
+test('Hakla character has unified 3D GLB model, extracted special WAV, and unblockable synced special', () => {
   const hakla = PLAYABLE_CHARACTERS.find((c) => c.name === 'Hakla');
   assert.ok(hakla, 'Hakla should exist in PLAYABLE_CHARACTERS');
-  assert.equal(hakla.portraitImage, '/assets/fighters/hakla.png');
+  assert.equal(hakla.portraitImage, undefined, 'Hakla must use unified 3D GLB model rather than pasted photo');
 
-  const imgPath = path.resolve(process.cwd(), 'public', 'assets', 'fighters', 'hakla.png');
+  const glbPath = path.resolve(process.cwd(), 'public', 'assets', 'models', 'hakla.glb');
   const wavPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', 'voices', 'hakla', 'special.wav');
-  assert.equal(fs.existsSync(imgPath), true, 'Hakla portrait image must exist');
+  assert.equal(fs.existsSync(glbPath), true, 'Hakla 3D GLB model must exist');
   assert.equal(fs.existsSync(wavPath), true, 'Hakla special.wav must exist');
   assert.equal(fs.readFileSync(wavPath).subarray(0, 4).toString('ascii'), 'RIFF');
 
