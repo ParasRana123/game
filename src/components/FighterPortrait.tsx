@@ -38,6 +38,13 @@ export const FighterPortrait: React.FC<FighterPortraitProps> = ({
       <path d="M18 96 C20 70, 80 70, 82 96 Z" fill={primary} />
       <path d="M35 96 L38 74 L62 74 L65 96 Z" fill={secondary} opacity="0.9" />
 
+      {def.headgear === 'beard_glasses' && (
+        <>
+          <polygon points="41,72 59,72 50,87" fill="#ffffff" />
+          <rect x="64" y="79" width="8" height="4" rx="1" fill="#facc15" />
+        </>
+      )}
+
       {def.headgear === 'gandhi_cap_muffler' && (
         <rect x="26" y="68" width="48" height="12" rx="6" fill={secondary} />
       )}

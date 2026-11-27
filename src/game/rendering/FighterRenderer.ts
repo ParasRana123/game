@@ -73,6 +73,27 @@ export class FighterRenderer {
       g.strokeEllipse(0, -78 * scale, 96 * scale, 170 * scale);
     }
 
+    // Dedicated Mitron Chakra/Mandala Aura during Special Attack
+    if (s.characterId === 'vikas_guru' && s.action === 'special') {
+      const cx = 0;
+      const cy = -94 * scale;
+      const haloR = 72 + Math.sin(timeSec * 16) * 8;
+      g.lineStyle(3, 0xfacc15, 0.9);
+      g.strokeCircle(cx, cy, haloR);
+      g.lineStyle(2, 0xf97316, 0.75);
+      g.strokeCircle(cx, cy, haloR * 0.72);
+      for (let i = 0; i < 12; i++) {
+        const ang = timeSec * 4.5 + (i / 12) * Math.PI * 2;
+        g.lineStyle(3, i % 2 === 0 ? 0xfacc15 : 0xf97316, 0.85);
+        g.lineBetween(
+          cx + Math.cos(ang) * (haloR * 0.48),
+          cy + Math.sin(ang) * (haloR * 0.48),
+          cx + Math.cos(ang) * (haloR + 12),
+          cy + Math.sin(ang) * (haloR + 12)
+        );
+      }
+    }
+
     // Super armor golden outline
     if (s.superArmorFrames > 0) {
       g.lineStyle(4, 0xfacc15, 0.85);
@@ -147,10 +168,17 @@ export class FighterRenderer {
         backArmAngle = -1.35;
         break;
       case 'special':
-        bob = -10;
-        torsoLean = s.movePhase === 'active' ? 0.24 : -0.12;
-        frontArmAngle = s.movePhase === 'active' ? -1.65 : -2.6;
-        backArmAngle = s.movePhase === 'active' ? -1.45 : -2.4;
+        if (s.characterId === 'vikas_guru') {
+          bob = -18 + Math.sin(timeSec * 14) * 4;
+          torsoLean = s.movePhase === 'active' ? 0.28 : -0.14;
+          frontArmAngle = s.movePhase === 'active' ? -1.55 + Math.sin(timeSec * 18) * 0.14 : -2.75;
+          backArmAngle = s.movePhase === 'active' ? -2.25 : -0.75;
+        } else {
+          bob = -10;
+          torsoLean = s.movePhase === 'active' ? 0.24 : -0.12;
+          frontArmAngle = s.movePhase === 'active' ? -1.65 : -2.6;
+          backArmAngle = s.movePhase === 'active' ? -1.45 : -2.4;
+        }
         break;
       case 'hitstun':
         hitFlash = s.actionFrame % 4 < 2;
@@ -204,6 +232,14 @@ export class FighterRenderer {
     g.fillStyle(accent, 0.92);
     g.fillRoundedRect(leanX - 18 * scale, shoulderY, 36 * scale, 22 * crouchFactor * scale, 6);
 
+    // Mitron saffron Nehru jacket + white kurta collar + pocket square
+    if (def.headgear === 'beard_glasses') {
+      g.fillStyle(secondary, 1);
+      g.fillTriangle(leanX - 10, shoulderY - 3, leanX + 10, shoulderY - 3, leanX, shoulderY + 18 * crouchFactor);
+      g.fillStyle(0xfef08a, 1);
+      g.fillRect(leanX + dir * 8, shoulderY + 12 * crouchFactor, 9, 5);
+    }
+
     // Saree / Muffler / Cape flair
     if (def.headgear === 'gandhi_cap_muffler') {
       g.fillStyle(secondary, 1);
@@ -246,6 +282,15 @@ export class FighterRenderer {
     g.fillStyle(skin, 1);
     g.fillCircle(armTipX, armTipY, 8 * scale);
     this.drawProp(g, def.propType, armTipX, armTipY, dir, scale, accent);
+
+    // Concentric sonic rings from Mitron's mic during Special Attack
+    if (s.characterId === 'vikas_guru' && s.action === 'special') {
+      for (let r = 0; r < 3; r++) {
+        const phase = (timeSec * 3.5 + r * 0.33) % 1;
+        g.lineStyle(3, r % 2 === 0 ? 0xfacc15 : 0xf97316, (1 - phase) * 0.9);
+        g.strokeCircle(armTipX + dir * 14, armTipY - 16, 12 + phase * 62);
+      }
+    }
 
     // Block shield visual
     if (s.action === 'block' || s.blocking) {
@@ -435,12 +480,17 @@ export function drawProjectile(
 ): void {
   const { x, y, radius, kind } = proj;
   if (kind === 'speech_wave') {
+    const pulse = 1 + Math.sin(timeSec * 20) * 0.12;
+    g.fillStyle(0xf97316, 0.24);
+    g.fillCircle(x, y, radius * 1.12 * pulse);
     g.lineStyle(5, 0xf97316, 0.95);
-    g.strokeCircle(x, y, radius);
-    g.lineStyle(3, 0xfacc15, 0.8);
-    g.strokeCircle(x, y, radius * 0.62);
-    g.fillStyle(0xfef08a, 0.35);
-    g.fillCircle(x, y, radius * 0.45);
+    g.strokeCircle(x, y, radius * pulse);
+    g.lineStyle(3.5, 0xfacc15, 0.9);
+    g.strokeCircle(x, y, radius * 0.68);
+    g.lineStyle(2.5, 0xffffff, 0.85);
+    g.strokeCircle(x, y, radius * 0.36);
+    g.fillStyle(0xfef08a, 0.5);
+    g.fillCircle(x, y, radius * 0.28);
   } else if (kind === 'gold_potato') {
     g.fillStyle(0xfacc15, 1);
     g.fillEllipse(x, y, radius * 1.4, radius * 1.0);
