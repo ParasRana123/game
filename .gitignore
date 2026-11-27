@@ -3,5 +3,7 @@ dist/
 dist-server/
 .env
 server/data/db.json
+__pycache__/
+*.pyc
 *.log
 .DS_Store
