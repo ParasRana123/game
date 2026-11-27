@@ -281,6 +281,11 @@ function spawnSpecialEffects(state: MatchState, fighter: FighterState, waveIndex
       const dmg = waveIndex === 0 ? Math.round(220 * def.stats.strength) : Math.round(95 * def.stats.strength);
       const radius = waveIndex === 0 ? 48 : 38;
       state.projectiles.push(makeProj(0, 66, -96, dir * 13.5, 0, radius, dmg, 120));
+    } else if (fighter.characterId === 'hakla') {
+      // Hakla's 3 synchronized unblockable sonic stutter waves aligned with the 5.97s audio
+      const dmg = waveIndex === 0 ? Math.round(250 * def.stats.strength) : Math.round(120 * def.stats.strength);
+      const radius = waveIndex === 0 ? 48 : 40;
+      state.projectiles.push(makeProj(0, 64, -94, dir * 14.2, 0, radius, dmg, 115));
     } else {
       const dmg = waveIndex === 0 ? baseDamage : Math.round(baseDamage * 0.4);
       state.projectiles.push(makeProj(0, 62, -92, dir * 13.2, 0, 40, dmg, 105));
@@ -414,6 +419,9 @@ function updateFighterControlsAndPhysics(
           if (fighter.actionFrame === 165) spawnSpecialEffects(state, fighter, 1);
           else if (fighter.actionFrame === 325) spawnSpecialEffects(state, fighter, 2);
           else if (fighter.actionFrame === 465) spawnSpecialEffects(state, fighter, 3);
+        } else if (fighter.characterId === 'hakla') {
+          if (fighter.actionFrame === 135) spawnSpecialEffects(state, fighter, 1);
+          else if (fighter.actionFrame === 255) spawnSpecialEffects(state, fighter, 2);
         } else if (total >= 240 && fighter.actionFrame === Math.floor(total * 0.52)) {
           spawnSpecialEffects(state, fighter, 1);
         }
