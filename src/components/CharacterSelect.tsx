@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Swords, Volume2, Shield, Zap, Gauge, Flame } from 'lucide-react';
+import { ArrowLeft, Swords, Volume2, Shield, Zap, Gauge, Flame, Eye } from 'lucide-react';
 import { PLAYABLE_CHARACTERS, CHARACTERS } from '@shared/characters';
 import { ARENA_LIST } from '@shared/arenas';
 import { ArenaId, CharacterId, Difficulty } from '@shared/types';
 import { AudioManager } from '@/audio/AudioManager';
 import { FighterPortrait } from './FighterPortrait';
+import { Character3DInspectorModal } from './Character3DInspectorModal';
 
 interface CharacterSelectProps {
   mode: 'single_ai' | 'local_2p';
@@ -29,6 +30,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({
   const [arenaId, setArenaId] = useState<ArenaId>('parliament');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [pickingSlot, setPickingSlot] = useState<0 | 1>(0);
+  const [inspectChar, setInspectChar] = useState<CharacterId | null>(null);
 
   const p1Def = CHARACTERS[p1Char];
   const p2Def = CHARACTERS[p2Char];
@@ -82,7 +84,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({
 
         {/* Selected Matchup Banner */}
         <div className="grid md:grid-cols-[1fr_auto_1fr] gap-4 items-center">
-          <FighterCardPreview label="PLAYER 1" def={p1Def} accent="amber" />
+          <FighterCardPreview label="PLAYER 1" def={p1Def} accent="amber" onInspect3D={() => setInspectChar(p1Def.id)} />
           <div className="font-arcade text-3xl font-extrabold text-rose-500 text-center px-2">
             VS
           </div>
@@ -91,6 +93,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({
             def={p2Def}
             accent="sky"
             flip
+            onInspect3D={() => setInspectChar(p2Def.id)}
           />
         </div>
 
@@ -202,6 +205,12 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({
           </div>
         </div>
       </div>
+      {inspectChar && (
+        <Character3DInspectorModal
+          initialCharId={inspectChar}
+          onClose={() => setInspectChar(null)}
+        />
+      )}
     </div>
   );
 };
@@ -211,7 +220,8 @@ const FighterCardPreview: React.FC<{
   def: (typeof CHARACTERS)[CharacterId];
   accent: 'amber' | 'sky';
   flip?: boolean;
-}> = ({ label, def, accent, flip }) => {
+  onInspect3D: () => void;
+}> = ({ label, def, accent, flip, onInspect3D }) => {
   const border = accent === 'amber' ? 'border-amber-500/40' : 'border-sky-500/40';
   const badge = accent === 'amber' ? 'bg-amber-500 text-slate-950' : 'bg-sky-500 text-slate-950';
   return (
@@ -223,6 +233,13 @@ const FighterCardPreview: React.FC<{
           <h2 className="font-arcade text-xl font-bold text-white truncate mt-1">{def.name}</h2>
           <p className="text-xs text-slate-400 truncate">{def.title}</p>
         </div>
+        <button
+          onClick={onInspect3D}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 cursor-pointer"
+          title="Inspect 3D Model (5 Angles)"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
         <button
           onClick={() => {
             AudioManager.unlock();

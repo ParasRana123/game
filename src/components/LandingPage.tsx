@@ -20,6 +20,7 @@ import { drawShadedCapsule, shadeHex } from '@/game/rendering/CanvasArtHelpers';
 import { paintDetailedHeadCanvas } from '@/game/rendering/FighterHeadBaker';
 import { FighterPortrait } from './FighterPortrait';
 import { AudioControls } from './AudioControls';
+import { Character3DInspectorModal } from './Character3DInspectorModal';
 
 interface LandingPageProps {
   playerName: string;
@@ -47,6 +48,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [friendMenuOpen, setFriendMenuOpen] = useState(false);
   const [previewChar, setPreviewChar] = useState<CharacterId>('vikas_guru');
+  const [inspect3DChar, setInspect3DChar] = useState<CharacterId | null>(null);
 
   // Animated background sparring fighters canvas (2.5D shaded Mitron vs Muffler Man)
   useEffect(() => {
@@ -415,6 +417,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   Hear Special Voice
                 </button>
                 <button
+                  onClick={() => setInspect3DChar(c.id)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-sky-500/40 text-xs font-bold text-sky-300 cursor-pointer"
+                >
+                  Inspect 3D Model (5 Angles)
+                </button>
+                <button
                   onClick={() => {
                     AudioManager.unlock();
                     onQuickSelectChar(c.id);
@@ -485,8 +493,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       <footer className="mt-auto border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        NETA KOMBAT: Sansad Showdown — Fictional Political Satire Arcade Fighter • Built with Phaser 3, React, TypeScript & Socket.IO
+        NETA KOMBAT: Sansad Showdown — Fictional Political Satire Arcade Fighter • Built with Phaser 3, Three.js 3D GLB, React, TypeScript &amp; Socket.IO
       </footer>
+      {inspect3DChar && (
+        <Character3DInspectorModal
+          initialCharId={inspect3DChar}
+          onClose={() => setInspect3DChar(null)}
+        />
+      )}
     </div>
   );
 };
