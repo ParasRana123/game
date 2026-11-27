@@ -16,16 +16,20 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<FightScene | null>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const pausedRef = useRef<boolean>(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const scene = new FightScene();
+    const scene = new FightScene(config);
+    scene.setPaused(pausedRef.current);
     sceneRef.current = scene;
 
     const game = new Phaser.Game({
       type: Phaser.AUTO,
-      parent: containerRef.current,
+      parent: container,
       width: STAGE_WIDTH,
       height: STAGE_HEIGHT,
       backgroundColor: '#09090f',
@@ -37,7 +41,6 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
     });
 
     gameRef.current = game;
-    game.scene.start('FightScene', config);
 
     onSceneReady?.({
       setTouchInput: (slot, patch) => {
