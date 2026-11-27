@@ -87,6 +87,11 @@ export class FighterRenderer {
     this.root.add([this.fxGfx, this.rig, this.nameTag]);
   }
 
+  setBodyVisible(visible: boolean): void {
+    this.rig.setVisible(visible);
+    this.shadow.setVisible(visible);
+  }
+
   update(state: FighterState, timeSec: number, groundY: number, lerpFactor = 0.55): void {
     this.renderX = Phaser.Math.Linear(this.renderX, state.x, lerpFactor);
     this.renderY = Phaser.Math.Linear(this.renderY, state.y, lerpFactor);

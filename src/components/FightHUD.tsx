@@ -65,7 +65,7 @@ export const FightHUD: React.FC<FightHUDProps> = ({
   });
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-2 sm:p-4 select-none">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-2 sm:p-4 select-none">
       {/* Top Arcade HUD */}
       <div className="space-y-2">
         {matchState.isBossFight && (

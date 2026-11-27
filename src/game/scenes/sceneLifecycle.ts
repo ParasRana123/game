@@ -10,6 +10,7 @@ export interface FightSceneConfig {
   localSlot?: 0 | 1;
   initialMatchState?: MatchState;
   onHudUpdate: (state: MatchState) => void;
+  onFrameSync?: (state: MatchState) => void;
   onMatchEnd: (state: MatchState, durationSec: number) => void;
 }
 

@@ -111,9 +111,7 @@ export class FightScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (!this.textures.exists('hakla_photo_raw')) {
-      this.load.image('hakla_photo_raw', '/assets/fighters/hakla.png');
-    }
+    // Models are loaded asynchronously as 3D GLB rigs by ThreeFightCanvas
   }
 
   create(): void {
@@ -134,6 +132,9 @@ export class FightScene extends Phaser.Scene {
       new FighterRenderer(this, this.matchState.fighters[0]),
       new FighterRenderer(this, this.matchState.fighters[1]),
     ];
+    // 3D GLB fighter bodies are rendered by ThreeFightCanvas; keep Phaser FX & nameplates
+    this.fighterRenderers[0].setBodyVisible(false);
+    this.fighterRenderers[1].setBodyVisible(false);
 
     this.projectileGfx = this.add.graphics().setDepth(16);
     this.fxGfx = this.add.graphics().setDepth(22);
@@ -278,6 +279,7 @@ export class FightScene extends Phaser.Scene {
     const lerp = this.cfg.mode === 'online' ? 0.38 : 0.72;
     this.fighterRenderers[0].update(this.matchState.fighters[0], timeSec, GROUND_Y, lerp);
     this.fighterRenderers[1].update(this.matchState.fighters[1], timeSec, GROUND_Y, lerp);
+    this.cfg.onFrameSync?.(this.matchState);
 
     this.renderProjectiles(timeSec);
     this.renderParticles(clampedStepDelta(delta));

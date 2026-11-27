@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@shared/combat/constants';
-import { InputState } from '@shared/types';
+import { InputState, MatchState } from '@shared/types';
 import { FightScene, FightSceneConfig } from './scenes/FightScene';
+import { ThreeFightCanvas } from './three/ThreeFightCanvas';
 
 interface PhaserHostProps {
   config: FightSceneConfig;
@@ -16,6 +17,7 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<FightScene | null>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const matchStateRef = useRef<MatchState | null>(config.initialMatchState || null);
   const pausedRef = useRef<boolean>(paused);
   pausedRef.current = paused;
 
@@ -23,7 +25,18 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
     const container = containerRef.current;
     if (!container) return;
 
-    const scene = new FightScene(config);
+    const sceneCfg: FightSceneConfig = {
+      ...config,
+      onFrameSync: (s) => {
+        matchStateRef.current = s;
+      },
+      onHudUpdate: (s) => {
+        matchStateRef.current = s;
+        config.onHudUpdate(s);
+      },
+    };
+
+    const scene = new FightScene(sceneCfg);
     scene.setPaused(pausedRef.current);
     sceneRef.current = scene;
 
@@ -53,6 +66,7 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
       game.destroy(true);
       gameRef.current = null;
       sceneRef.current = null;
+      matchStateRef.current = null;
     };
     // Re-create Phaser instance only when a new match identity starts
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,10 +84,15 @@ export const PhaserHost: React.FC<PhaserHostProps> = ({ config, paused, onSceneR
     sceneRef.current?.setPaused(paused);
   }, [paused]);
 
+  const matchKey = `${config.mode}_${config.p1Char}_${config.p2Char}_${config.arenaId}_${config.isBossFight}`;
+
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full flex items-center justify-center bg-black overflow-hidden rounded-xl border border-amber-500/20 shadow-2xl"
-    />
+    <div className="relative w-full h-full overflow-hidden rounded-xl border border-amber-500/20 shadow-2xl bg-black">
+      <div
+        ref={containerRef}
+        className="w-full h-full flex items-center justify-center"
+      />
+      <ThreeFightCanvas matchStateRef={matchStateRef} paused={paused} matchKey={matchKey} />
+    </div>
   );
 };
