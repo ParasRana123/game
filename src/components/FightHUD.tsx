@@ -246,22 +246,25 @@ export const FightHUD: React.FC<FightHUDProps> = ({
       </div>
 
       {/* Center Dramatic Announcements & Special Banner */}
-      <div className="flex flex-col items-center justify-center gap-3 my-auto">
+      <div className="flex flex-col items-center justify-start gap-3 my-auto pt-2">
         <AnimatePresence>
           {matchState.specialBanner && (
             <motion.div
               key={matchState.specialBanner.title}
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 1.15, opacity: 0 }}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-rose-600/95 border-2 border-yellow-200 shadow-2xl text-center"
+              initial={{ scale: 0.75, opacity: 0, y: -12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.1, opacity: 0 }}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-rose-600/95 border-2 border-yellow-200 shadow-2xl text-center"
             >
-              <div className="flex items-center justify-center gap-2 font-arcade text-2xl sm:text-3xl font-extrabold text-slate-950">
-                <Flame className="w-6 h-6" />
+              <div className="flex items-center justify-center gap-2 font-arcade text-xl sm:text-2xl font-extrabold text-slate-950">
+                <Flame className="w-5 h-5" />
                 {matchState.specialBanner.title}
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-950/90 italic">
+              <div className="text-xs font-bold text-slate-950/90 italic">
                 &ldquo;{matchState.specialBanner.subtitle}&rdquo;
+              </div>
+              <div className="mt-1 inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-slate-950/85 text-[10px] font-arcade font-bold text-amber-300 tracking-wider">
+                UNBLOCKABLE • SUPREME DAMAGE • OPPONENT ATTACKS LOCKED
               </div>
             </motion.div>
           )}

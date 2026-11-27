@@ -37,6 +37,18 @@ export function computeAIInput(
   const dist = Math.abs(dx);
   const towardLeft = dx < 0;
 
+  // Opponent cannot attack during a Special Attack; try to jump/reposition until special finishes
+  if (target.action === 'special') {
+    if (dist < 260 && ai.grounded && deterministicRoll(state.tick, aiIndex + 13) < 0.08) {
+      input.up = true;
+    } else if (towardLeft) {
+      input.right = true;
+    } else {
+      input.left = true;
+    }
+    return input;
+  }
+
   const reactionRate =
     difficulty === 'easy' ? 0.25 : difficulty === 'medium' ? 0.58 : isBoss ? 0.88 : 0.78;
   const aggression =
@@ -49,8 +61,7 @@ export function computeAIInput(
   const targetAttacking =
     target.action === 'punch' ||
     target.action === 'kick' ||
-    target.action === 'uppercut' ||
-    target.action === 'special';
+    target.action === 'uppercut';
 
   const roll = deterministicRoll(state.tick, aiIndex + 7);
   const roll2 = deterministicRoll(state.tick, aiIndex + 31);

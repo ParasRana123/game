@@ -10,6 +10,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'MITRON MEGA-SPEECH',
     specialSubtitle: 'Angein Ghatram Nainave Aatram Nyaye Na Rajyam!',
     specialKind: 'projectile',
+    specialDurationFrames: 552,
     projectileKind: 'speech_wave',
     stats: {
       maxHp: 1050,
@@ -53,6 +54,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'ALOO-SONA TRANSMUTER',
     specialSubtitle: '24K Golden Potato Barrage!',
     specialKind: 'projectile',
+    specialDurationFrames: 226,
     projectileKind: 'gold_potato',
     stats: {
       maxHp: 980,
@@ -96,6 +98,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'JHADU TORNADO',
     specialSubtitle: '100% Free Electricity & Sweep Storm!',
     specialKind: 'projectile',
+    specialDurationFrames: 192,
     projectileKind: 'broom_cyclone',
     stats: {
       maxHp: 940,
@@ -139,6 +142,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'KHELA HOBE FURY',
     specialSubtitle: 'Supersonic Chappal Hurricane!',
     specialKind: 'barrage',
+    specialDurationFrames: 185,
     projectileKind: 'chappal_spin',
     stats: {
       maxHp: 990,
@@ -182,6 +186,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'MASS BLOCKBUSTER SLAM',
     specialSubtitle: '100-Crore Opening Weekend Impact!',
     specialKind: 'dash_slam',
+    specialDurationFrames: 287,
     projectileKind: 'cinema_coin',
     stats: {
       maxHp: 1020,
@@ -225,6 +230,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'BULLDOZER JUSTICE',
     specialSubtitle: 'Zero-Tolerance Demolition Charge!',
     specialKind: 'dash_slam',
+    specialDurationFrames: 351,
     projectileKind: 'bulldozer_dash',
     stats: {
       maxHp: 1180,
@@ -268,6 +274,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'LALTEN EXPRESS',
     specialSubtitle: 'Flaming Brass Lantern Stampede!',
     specialKind: 'projectile',
+    specialDurationFrames: 260,
     projectileKind: 'lantern_fire',
     stats: {
       maxHp: 1060,
@@ -311,6 +318,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'MASTERSTROKE MATRIX',
     specialSubtitle: '3AM Floor-Test Checkmates!',
     specialKind: 'barrage',
+    specialDurationFrames: 307,
     projectileKind: 'chess_orb',
     stats: {
       maxHp: 1010,
@@ -355,6 +363,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     specialName: 'SUPREME ORDINANCE METEOR',
     specialSubtitle: 'Absolute Veto Apocalypse!',
     specialKind: 'meteor',
+    specialDurationFrames: 557,
     projectileKind: 'ordinance_meteor',
     stats: {
       maxHp: 1450,

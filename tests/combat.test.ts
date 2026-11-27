@@ -112,8 +112,67 @@ test('Special attack consumes meter, emits voice event, and spawns projectile', 
   assert.equal(sawVoice, true);
   assert.equal(sawBanner, true);
   assert.equal(state.fighters[0].meter, 0);
-  assert.equal(state.projectiles.length, 2, 'Mitron special should spawn twin speech_wave projectiles');
+  assert.ok(state.projectiles.length >= 1, 'Mitron special should spawn speech_wave projectile');
   assert.ok(state.projectiles.every((p) => p.kind === 'speech_wave'));
+});
+
+test('Special attack syncs full audio duration, is unblockable, deals supreme damage, and locks opponent attacks until finished', () => {
+  const state = createMatchState('vikas_guru', 'bulldozer_baba', 'parliament');
+  state.phase = 'fighting';
+  state.fighters[0].x = 400;
+  state.fighters[1].x = 620;
+  state.fighters[1].hp = 1180;
+  state.fighters[0].meter = 100;
+
+  // Trigger Mitron special while Bulldozer Baba holds Block and mashes attacks
+  stepMatchState(
+    state,
+    { ...emptyInput(), special: true },
+    { ...emptyInput(), block: true, punch: true, kick: true }
+  );
+  assert.equal(state.fighters[0].action, 'special');
+  assert.equal(state.fighters[1].action, 'idle', 'Opponent must not start punch/kick/block during special');
+
+  // Step halfway through Mitron's 552-frame audio: animation & banner must still be active, opponent still locked
+  let opponentAttackedDuringSpecial = false;
+  for (let i = 0; i < 300; i++) {
+    stepMatchState(
+      state,
+      emptyInput(),
+      { ...emptyInput(), block: true, punch: i % 5 === 0, kick: i % 7 === 0, grab: i % 9 === 0 }
+    );
+    if (state.fighters[0].action === 'special') {
+      if (
+        state.fighters[1].action === 'punch' ||
+        state.fighters[1].action === 'kick' ||
+        state.fighters[1].action === 'uppercut' ||
+        state.fighters[1].action === 'grab' ||
+        state.fighters[1].action === 'special'
+      ) {
+        opponentAttackedDuringSpecial = true;
+      }
+    }
+  }
+
+  assert.equal(opponentAttackedDuringSpecial, false, 'Opponent must not attack while special is active');
+  assert.equal(state.fighters[0].action, 'special', 'Mitron special animation must remain active during 9.2s audio');
+  assert.ok(state.specialBanner !== null, 'Special banner must remain active with animation/audio');
+
+  const damageDealt = 1180 - state.fighters[1].hp;
+  assert.ok(
+    damageDealt >= 230,
+    `Unblockable special must deal supreme damage even through block, got ${damageDealt}`
+  );
+
+  // Finish remaining frames of the 552-frame special (+ hitstop)
+  for (let i = 0; i < 290; i++) {
+    stepMatchState(state, emptyInput(), emptyInput());
+  }
+  assert.notEqual(state.fighters[0].action, 'special', 'Special should finish cleanly after audio duration');
+
+  // Now opponent CAN attack again!
+  stepMatchState(state, emptyInput(), { ...emptyInput(), punch: true });
+  assert.equal(state.fighters[1].action, 'punch', 'Opponent should be able to attack once special ends');
 });
 
 test('Mitron character and extracted special WAV audio asset exist', () => {

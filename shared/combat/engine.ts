@@ -197,16 +197,16 @@ function startAttack(
 
   if (action === 'special') {
     fighter.meter = Math.max(0, fighter.meter - SPECIAL_COST);
-    fighter.invulnFrames = 18;
-    fighter.superArmorFrames = def.specialKind === 'dash_slam' ? 28 : 14;
+    fighter.invulnFrames = def.specialDurationFrames;
+    fighter.superArmorFrames = def.specialDurationFrames;
     state.specialBanner = {
       playerIndex: fighter.playerIndex,
       characterId: fighter.characterId,
       title: def.specialName,
       subtitle: def.specialSubtitle,
-      framesLeft: fighter.characterId === 'vikas_guru' ? 180 : 95,
+      framesLeft: def.specialDurationFrames,
     };
-    state.hitstopFrames = 10;
+    state.hitstopFrames = 8;
     state.events.push({
       type: 'special_activate',
       playerIndex: fighter.playerIndex,
@@ -244,10 +244,10 @@ function startAttack(
   }
 }
 
-function spawnSpecialEffects(state: MatchState, fighter: FighterState): void {
+function spawnSpecialEffects(state: MatchState, fighter: FighterState, waveIndex = 0): void {
   const def = CHARACTERS[fighter.characterId];
   const dir = fighter.facing;
-  const baseDamage = Math.round(190 * def.stats.strength);
+  const baseDamage = Math.round(MOVES.special.damage * def.stats.strength);
 
   const makeProj = (
     offsetIdx: number,
@@ -259,7 +259,7 @@ function spawnSpecialEffects(state: MatchState, fighter: FighterState): void {
     dmg: number,
     ttl = 110
   ): ProjectileState => ({
-    id: `proj_${state.tick}_${fighter.playerIndex}_${offsetIdx}`,
+    id: `proj_${state.tick}_${fighter.playerIndex}_${waveIndex}_${offsetIdx}`,
     ownerIndex: fighter.playerIndex,
     characterId: fighter.characterId,
     kind: def.projectileKind,
@@ -277,34 +277,40 @@ function spawnSpecialEffects(state: MatchState, fighter: FighterState): void {
 
   if (def.specialKind === 'projectile') {
     if (fighter.characterId === 'vikas_guru') {
-      state.projectiles.push(makeProj(0, 66, -96, dir * 13.5, 0, 44, Math.round(baseDamage * 0.72), 110));
-      state.projectiles.push(makeProj(1, 24, -84, dir * 10.5, 0, 32, Math.round(baseDamage * 0.48), 125));
+      // Mitron's 4 synchronized acoustic waves aligned with the 4 phrases of the 9.2s audio
+      const dmg = waveIndex === 0 ? Math.round(220 * def.stats.strength) : Math.round(95 * def.stats.strength);
+      const radius = waveIndex === 0 ? 48 : 38;
+      state.projectiles.push(makeProj(0, 66, -96, dir * 13.5, 0, radius, dmg, 120));
     } else {
-      state.projectiles.push(makeProj(0, 62, -92, dir * 13.2, 0, 38, baseDamage, 100));
+      const dmg = waveIndex === 0 ? baseDamage : Math.round(baseDamage * 0.4);
+      state.projectiles.push(makeProj(0, 62, -92, dir * 13.2, 0, 40, dmg, 105));
     }
   } else if (def.specialKind === 'barrage') {
-    state.projectiles.push(makeProj(0, 56, -102, dir * 14.5, -1.0, 28, Math.round(baseDamage * 0.62), 95));
-    state.projectiles.push(makeProj(1, 28, -68, dir * 11.5, 0.4, 28, Math.round(baseDamage * 0.62), 115));
+    const scale = waveIndex === 0 ? 0.55 : 0.35;
+    state.projectiles.push(makeProj(0, 56, -102, dir * 14.5, -1.0, 30, Math.round(baseDamage * scale), 95));
+    state.projectiles.push(makeProj(1, 28, -68, dir * 11.5, 0.4, 30, Math.round(baseDamage * scale), 115));
     fighter.vx = dir * 10;
   } else if (def.specialKind === 'dash_slam') {
-    fighter.vx = dir * 17.5;
-    state.projectiles.push(makeProj(0, 48, -68, dir * 16.5, 0, 46, Math.round(baseDamage * 0.9), 26));
+    fighter.vx = dir * 16.5;
+    const dmg = waveIndex === 0 ? baseDamage : Math.round(baseDamage * 0.35);
+    state.projectiles.push(makeProj(0, 48, -68, dir * 16.5, 0, 46, dmg, 30));
   } else if (def.specialKind === 'meteor') {
     // Boss multi-meteor + ground wave
     const opponent = state.fighters[fighter.playerIndex === 0 ? 1 : 0];
     const targetX = opponent.x;
+    const scale = waveIndex === 0 ? 0.45 : 0.28;
     state.projectiles.push(
       {
-        ...makeProj(0, 0, 0, (targetX - fighter.x) * 0.015, 11.5, 42, Math.round(baseDamage * 0.65), 85),
+        ...makeProj(0, 0, 0, (targetX - fighter.x) * 0.015, 11.5, 42, Math.round(baseDamage * scale), 85),
         x: Math.max(STAGE_LEFT + 60, Math.min(STAGE_RIGHT - 60, targetX - 90)),
         y: 60,
       },
       {
-        ...makeProj(1, 0, 0, 0, 12.5, 44, Math.round(baseDamage * 0.7), 85),
+        ...makeProj(1, 0, 0, 0, 12.5, 44, Math.round(baseDamage * scale), 85),
         x: Math.max(STAGE_LEFT + 60, Math.min(STAGE_RIGHT - 60, targetX + 70)),
         y: 20,
       },
-      makeProj(2, 54, -85, dir * 12.5, 0, 36, Math.round(baseDamage * 0.75), 95)
+      makeProj(2, 54, -85, dir * 12.5, 0, 36, Math.round(baseDamage * scale), 95)
     );
   }
 }
@@ -339,10 +345,12 @@ function updateFighterControlsAndPhysics(
     });
   }
 
-  const punchJustPressed = input.punch && !fighter.prevPressed.punch;
-  const kickJustPressed = input.kick && !fighter.prevPressed.kick;
-  const grabJustPressed = input.grab && !fighter.prevPressed.grab;
-  const specialJustPressed = input.special && !fighter.prevPressed.special;
+  const opponentInSpecial = opponent.action === 'special';
+
+  const punchJustPressed = !opponentInSpecial && input.punch && !fighter.prevPressed.punch;
+  const kickJustPressed = !opponentInSpecial && input.kick && !fighter.prevPressed.kick;
+  const grabJustPressed = !opponentInSpecial && input.grab && !fighter.prevPressed.grab;
+  const specialJustPressed = !opponentInSpecial && input.special && !fighter.prevPressed.special;
   const upJustPressed = input.up && !fighter.prevPressed.up;
 
   fighter.prevPressed = {
@@ -352,6 +360,16 @@ function updateFighterControlsAndPhysics(
     special: input.special,
     up: input.up,
   };
+
+  // While opponent is executing a Special Attack, cancel any in-progress counter-attack
+  if (opponentInSpecial && isAttackAction(fighter.action)) {
+    fighter.action = fighter.grounded ? 'idle' : 'jump';
+    fighter.actionFrame = 0;
+    fighter.movePhase = 'none';
+    fighter.moveHitConnected = false;
+    fighter.comboStep = 0;
+    fighter.hitbox = null;
+  }
 
   // Hitstun / knockdown / blockstun states
   if (fighter.action === 'hitstun' || fighter.action === 'knockdown') {
@@ -380,23 +398,39 @@ function updateFighterControlsAndPhysics(
   } else if (isAttackAction(fighter.action)) {
     const move = MOVES[fighter.action];
     fighter.actionFrame += 1;
-    const total = getMoveTotalFrames(move);
+    const total =
+      fighter.action === 'special' ? def.specialDurationFrames : getMoveTotalFrames(move);
+    const activeEnd =
+      fighter.action === 'special' ? total - move.recovery : move.startup + move.active;
 
     if (fighter.actionFrame <= move.startup) {
       fighter.movePhase = 'startup';
       fighter.hitbox = null;
-    } else if (fighter.actionFrame <= move.startup + move.active) {
-      if (fighter.movePhase === 'startup' && fighter.action === 'special') {
-        spawnSpecialEffects(state, fighter);
+    } else if (fighter.actionFrame <= activeEnd) {
+      if (fighter.action === 'special') {
+        if (fighter.movePhase === 'startup') {
+          spawnSpecialEffects(state, fighter, 0);
+        } else if (fighter.characterId === 'vikas_guru') {
+          if (fighter.actionFrame === 165) spawnSpecialEffects(state, fighter, 1);
+          else if (fighter.actionFrame === 325) spawnSpecialEffects(state, fighter, 2);
+          else if (fighter.actionFrame === 465) spawnSpecialEffects(state, fighter, 3);
+        } else if (total >= 240 && fighter.actionFrame === Math.floor(total * 0.52)) {
+          spawnSpecialEffects(state, fighter, 1);
+        }
+        // Keep caster facing opponent during long special speeches
+        fighter.facing = opponent.x >= fighter.x ? 1 : -1;
       }
       fighter.movePhase = 'active';
-      fighter.hitbox = computeAttackHitbox(
-        fighter.x,
-        fighter.y,
-        fighter.facing,
-        fighter.crouching,
-        move
-      );
+      fighter.hitbox =
+        fighter.action === 'special' && fighter.actionFrame > move.startup + move.active + 8
+          ? null
+          : computeAttackHitbox(
+              fighter.x,
+              fighter.y,
+              fighter.facing,
+              fighter.crouching,
+              move
+            );
     } else if (fighter.actionFrame < total) {
       fighter.movePhase = 'recovery';
       fighter.hitbox = null;
@@ -411,6 +445,7 @@ function updateFighterControlsAndPhysics(
 
     // Combo canceling on connected hit!
     if (
+      !opponentInSpecial &&
       fighter.moveHitConnected &&
       (fighter.movePhase === 'active' || fighter.movePhase === 'recovery')
     ) {
@@ -442,7 +477,9 @@ function updateFighterControlsAndPhysics(
 
     fighter.crouching = fighter.grounded && input.down && !input.block;
     fighter.blocking =
-      fighter.grounded && (input.block || (holdingBack && opponentAttacking));
+      !opponentInSpecial &&
+      fighter.grounded &&
+      (input.block || (holdingBack && opponentAttacking));
 
     if (specialJustPressed && fighter.meter >= SPECIAL_COST) {
       startAttack(state, fighter, 'special', 0);
@@ -560,6 +597,7 @@ function applyHit(
 
   const blocked =
     !unblockable &&
+    !isSpecialOrProj &&
     defender.blocking &&
     !isCounterHit &&
     defender.action !== 'hitstun' &&
@@ -586,8 +624,8 @@ function applyHit(
     return;
   }
 
-  // Combo damage scaling so combos feel rewarding without instant 100-0
-  const scaling = Math.max(0.55, 1 - defender.comboHitsReceived * 0.08);
+  // Combo damage scaling for normal hits; Special Attacks always deal full supreme damage
+  const scaling = isSpecialOrProj ? 1.0 : Math.max(0.55, 1 - defender.comboHitsReceived * 0.08);
   const critBonus = isCounterHit || attacker.comboCounter >= 2 ? 1.18 : 1.0;
   const finalDamage = Math.max(8, Math.round(damage * scaling * critBonus));
 
@@ -731,11 +769,11 @@ function resolveCombatCollisions(state: MatchState): void {
         attacker,
         defender,
         proj.damage,
-        28,
-        16,
+        32,
+        0,
         proj.knockbackX,
         proj.knockbackY,
-        false,
+        true,
         true,
         true
       );

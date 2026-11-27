@@ -216,6 +216,7 @@ export interface CharacterDef {
   specialName: string;
   specialSubtitle: string;
   specialKind: 'projectile' | 'dash_slam' | 'barrage' | 'meteor';
+  specialDurationFrames: number;
   projectileKind: ProjectileKind;
   stats: CharacterStats;
   palette: CharacterPalette;
