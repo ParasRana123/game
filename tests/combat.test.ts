@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createMatchState, emptyInput, stepMatchState } from '../shared/combat/engine.js';
 import { computeAIInput, createAIMemory } from '../shared/combat/ai.js';
 import { PLAYABLE_CHARACTERS, BOSS_CHARACTER } from '../shared/characters.js';
@@ -110,7 +112,19 @@ test('Special attack consumes meter, emits voice event, and spawns projectile', 
   assert.equal(sawVoice, true);
   assert.equal(sawBanner, true);
   assert.equal(state.fighters[0].meter, 0);
-  assert.ok(state.projectiles.length >= 1, 'Special should spawn signature projectile');
+  assert.equal(state.projectiles.length, 2, 'Mitron special should spawn twin speech_wave projectiles');
+  assert.ok(state.projectiles.every((p) => p.kind === 'speech_wave'));
+});
+
+test('Mitron character and extracted special WAV audio asset exist', () => {
+  const mitron = PLAYABLE_CHARACTERS.find((c) => c.name === 'Mitron');
+  assert.ok(mitron, 'Mitron should exist in PLAYABLE_CHARACTERS');
+  assert.equal(mitron.specialName, 'MITRON MEGA-SPEECH');
+  const wavPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', 'voices', mitron.id, 'special.wav');
+  assert.equal(fs.existsSync(wavPath), true, 'Mitron special.wav must exist');
+  const buf = fs.readFileSync(wavPath);
+  assert.equal(buf.subarray(0, 4).toString('ascii'), 'RIFF');
+  assert.ok(buf.length > 100_000, 'Mitron special.wav should contain extracted recording audio');
 });
 
 test('AI controller approaches and attacks opponent', () => {
