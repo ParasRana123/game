@@ -466,6 +466,7 @@ export class FightScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    AudioManager.stopAllVoices();
     const socket = SocketClient.getSocket();
     if (socket && this.socketBound) {
       socket.off('match:state', this.handleServerState);

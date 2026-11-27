@@ -3,6 +3,7 @@ import math
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import wave
 import numpy as np
@@ -356,6 +357,10 @@ def generate_voices():
                 out = processed
 
             out_path = os.path.join(VOICES_DIR, char_id, f"{slot}.wav")
+            # Preserve custom extracted recording for Mitron's special attack unless --force is passed
+            if char_id == "vikas_guru" and slot == "special" and os.path.exists(out_path) and "--force" not in sys.argv:
+                print(f"Preserved custom recording: {char_id}/{slot}.wav")
+                continue
             write_wav_mono(out_path, out)
             print(f"Generated voice: {char_id}/{slot}.wav")
     finally:

@@ -176,7 +176,8 @@ class AudioManagerImpl {
     const isSpecial = slot === 'special';
 
     // Prevent normal attack/hit grunts from interrupting an active Special voice line
-    if (!isSpecial && nowMs < this.specialLockUntilMs) {
+    const anySpecialPlaying = Array.from(this.activeVoices.values()).some((v) => v.isSpecial);
+    if (!isSpecial && (nowMs < this.specialLockUntilMs || anySpecialPlaying)) {
       return;
     }
 
@@ -184,8 +185,13 @@ class AudioManagerImpl {
     const buf = await this.loadBuffer(url);
     if (!buf) return;
 
-    // Stop prior voice on this channel key to prevent overlapping voices
+    // Re-check special lock after async buffer load
     const prev = this.activeVoices.get(channelKey);
+    if (!isSpecial && (prev?.isSpecial || Array.from(this.activeVoices.values()).some((v) => v.isSpecial))) {
+      return;
+    }
+
+    // Stop prior voice on this channel key to prevent overlapping voices
     if (prev) {
       try {
         prev.source.stop();
@@ -207,7 +213,7 @@ class AudioManagerImpl {
           this.activeVoices.delete(key);
         }
       }
-      this.specialLockUntilMs = nowMs + Math.min(2600, buf.duration * 1000);
+      this.specialLockUntilMs = nowMs + Math.min(9800, buf.duration * 1000);
       this.duckBgm(buf.duration);
     }
 
@@ -220,6 +226,10 @@ class AudioManagerImpl {
       if (cur?.source === src) {
         this.activeVoices.delete(channelKey);
       }
+      if (isSpecial) {
+        this.specialLockUntilMs = 0;
+        this.restoreBgm();
+      }
     };
     src.start(0);
   }
@@ -229,8 +239,28 @@ class AudioManagerImpl {
     const now = this.ctx.currentTime;
     const target = this.settings.bgmVolume;
     this.bgmGain.gain.cancelScheduledValues(now);
-    this.bgmGain.gain.setTargetAtTime(target * 0.25, now, 0.04);
-    this.bgmGain.gain.setTargetAtTime(target, now + Math.min(2.8, durationSec), 0.25);
+    this.bgmGain.gain.setTargetAtTime(target * 0.22, now, 0.04);
+    this.bgmGain.gain.setTargetAtTime(target, now + Math.min(9.5, durationSec), 0.3);
+  }
+
+  private restoreBgm(): void {
+    if (!this.ctx || !this.bgmGain || this.settings.bgmMuted) return;
+    const now = this.ctx.currentTime;
+    this.bgmGain.gain.cancelScheduledValues(now);
+    this.bgmGain.gain.setTargetAtTime(this.settings.bgmVolume, now, 0.25);
+  }
+
+  stopAllVoices(): void {
+    this.specialLockUntilMs = 0;
+    for (const [, v] of this.activeVoices.entries()) {
+      try {
+        v.source.stop();
+      } catch {
+        // ignore
+      }
+    }
+    this.activeVoices.clear();
+    this.restoreBgm();
   }
 
   async playSfx(
