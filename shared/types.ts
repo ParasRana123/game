@@ -9,6 +9,7 @@ export type CharacterId =
   | 'bulldozer_baba'
   | 'chara_king'
   | 'chanakya_x'
+  | 'hakla'
   | 'samrat_ordinance';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
@@ -75,6 +76,7 @@ export type ProjectileKind =
   | 'bulldozer_dash'
   | 'lantern_fire'
   | 'chess_orb'
+  | 'hakla_sonic_wave'
   | 'ordinance_meteor';
 
 export interface ProjectileState {
@@ -218,10 +220,11 @@ export interface CharacterDef {
   specialKind: 'projectile' | 'dash_slam' | 'barrage' | 'meteor';
   specialDurationFrames: number;
   projectileKind: ProjectileKind;
+  portraitImage?: string;
   stats: CharacterStats;
   palette: CharacterPalette;
-  propType: 'mic' | 'gold_bar' | 'broom' | 'chappal' | 'shades' | 'bulldozer' | 'lantern' | 'chess' | 'scepter';
-  headgear: 'beard_glasses' | 'youth_hair' | 'gandhi_cap_muffler' | 'saree_bun' | 'cinema_shades' | 'saffron_bald' | 'rustic_hair' | 'tactical_beard' | 'golden_crown';
+  propType: 'mic' | 'gold_bar' | 'broom' | 'chappal' | 'shades' | 'bulldozer' | 'lantern' | 'chess' | 'megaphone' | 'scepter';
+  headgear: 'beard_glasses' | 'youth_hair' | 'gandhi_cap_muffler' | 'saree_bun' | 'cinema_shades' | 'saffron_bald' | 'rustic_hair' | 'tactical_beard' | 'hakla_photo' | 'golden_crown';
   voiceLines: Record<VoiceSlot, string>;
 }
 
