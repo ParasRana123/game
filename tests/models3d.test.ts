@@ -83,3 +83,12 @@ test('All 10 characters have valid rigged full-body 3D GLB models with PBR textu
     assert.ok(maxY >= 1.60 && maxY <= 2.15, `${c.id} height should be realistic human scale (got maxY=${maxY})`);
   }
 });
+
+test('Redesigned Mitron (vikas_guru.glb) has dedicated Modi-inspired garment, skin, and spectacle materials', () => {
+  const glbPath = path.resolve(process.cwd(), 'public', 'assets', 'models', 'vikas_guru.glb');
+  const gltf = parseGlbJson(glbPath);
+  const matNames = new Set(gltf.materials.map((m) => m.name));
+  for (const req of ['skin', 'body_skin', 'eye', 'hair', 'jacket', 'kurta', 'button', 'lapel_pin', 'glass_lens', 'metal', 'footwear']) {
+    assert.ok(matNames.has(req), `Mitron GLB missing dedicated material: ${req}`);
+  }
+});
