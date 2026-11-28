@@ -119,19 +119,19 @@ def euler_xyz_to_quat(rx: float, ry: float, rz: float) -> list[float]:
 def _fighting_guard_pose() -> dict[int, tuple[float, float, float]]:
     """Base natural arcade fighting guard stance (facing +Z, slight 3/4 twist)."""
     return {
-        0: (0.0, 0.22, 0.0),         # Hips angled slightly
-        1: (0.05, -0.06, 0.0),       # Spine
-        2: (0.06, -0.10, 0.0),       # Chest
-        3: (-0.04, -0.06, 0.0),      # Neck
-        4: (-0.04, -0.04, 0.0),      # Head looking straight at opponent
-        6: (-0.55, 0.12, 0.18),      # LeftUpperArm forward guard
-        7: (-1.35, 0.0, -0.15),      # LeftForearm raised fist
-        10: (-0.78, -0.15, -0.22),   # RightUpperArm lead guard
-        11: (-1.45, 0.0, 0.18),      # RightForearm lead fist
-        13: (-0.28, 0.0, 0.08),      # LeftThigh step back
-        14: (0.36, 0.0, 0.0),        # LeftShin bend
-        16: (0.22, 0.0, -0.08),      # RightThigh lead leg
-        17: (0.20, 0.0, 0.0),        # RightShin
+        0: (0.0, 0.20, 0.0),         # Hips angled slightly
+        1: (0.04, -0.05, 0.0),       # Spine
+        2: (0.05, -0.08, 0.0),       # Chest
+        3: (-0.03, -0.05, 0.0),      # Neck
+        4: (-0.03, -0.04, 0.0),      # Head looking straight at opponent
+        6: (-0.42, 0.14, 0.20),      # LeftUpperArm natural guard
+        7: (-1.18, 0.0, -0.14),      # LeftForearm raised fist
+        10: (-0.56, -0.14, -0.22),   # RightUpperArm lead guard
+        11: (-1.24, 0.0, 0.16),      # RightForearm lead fist
+        13: (-0.26, 0.0, 0.08),      # LeftThigh step back
+        14: (0.34, 0.0, 0.0),        # LeftShin bend
+        16: (0.20, 0.0, -0.08),      # RightThigh lead leg
+        17: (0.18, 0.0, 0.0),        # RightShin
         20: (-0.85, 0.0, 0.0),       # LeftFingers curled fist
         21: (-0.85, 0.0, 0.0),       # RightFingers curled fist
     }

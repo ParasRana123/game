@@ -11,6 +11,14 @@ from scripts.modeling.pbr_textures import (
 )
 from scripts.modeling.human_mesh import MeshPart, build_anatomical_body, build_sculpted_head_and_neck
 from scripts.modeling.character_outfits import build_clothing_and_accessories, build_hair_geometry
+from scripts.modeling.mitron_model import build_mitron_complete_parts
+from scripts.modeling.mitron_textures import (
+    generate_mitron_body_skin_texture,
+    generate_mitron_face_texture,
+    generate_mitron_hair_beard_texture,
+    generate_mitron_jacket_texture,
+    generate_mitron_kurta_texture,
+)
 from scripts.modeling.rig_and_anim import (
     BONE_NAMES,
     BONE_PARENTS,
@@ -22,9 +30,9 @@ from scripts.modeling.rig_and_anim import (
 
 CHARACTER_SPECS = {
     "vikas_guru": {
-        "skin": "#d9a278", "primary": "#f97316", "secondary": "#fef3c7", "accent": "#facc15",
-        "hair": "#f1f5f9", "footwear": "#5c3317", "headgear": "beard_glasses", "prop": "mic",
-        "scale_h": 1.00, "build_width": 1.06, "jaw_width": 1.10, "cheek": 1.12, "nose": 1.10,
+        "skin": "#dfa884", "primary": "#d7cec0", "secondary": "#f4f5f7", "accent": "#6b7280",
+        "hair": "#e8ecf1", "footwear": "#291d14", "headgear": "beard_glasses", "prop": "mic",
+        "scale_h": 1.00, "build_width": 1.07, "jaw_width": 1.10, "cheek": 1.12, "nose": 1.10,
         "brow": 1.15, "stubble": False, "tilak": False, "pattern": "kurta", "iris": "#2c190d",
     },
     "yuva_prince": {
@@ -147,6 +155,7 @@ class GlbBuilder:
         metallic: float = 0.0,
         roughness: float = 0.7,
         double_sided: bool = False,
+        alpha_mode: str | None = None,
     ) -> int:
         pbr: dict = {"metallicFactor": metallic, "roughnessFactor": roughness}
         if tex_idx is not None:
@@ -156,6 +165,8 @@ class GlbBuilder:
         mat: dict = {"name": name, "pbrMetallicRoughness": pbr}
         if double_sided:
             mat["doubleSided"] = True
+        if alpha_mode:
+            mat["alphaMode"] = alpha_mode
         idx = len(self.materials)
         self.materials.append(mat)
         return idx
@@ -167,50 +178,76 @@ def export_character_glb(char_id: str, out_path: str) -> dict:
     bw = spec["build_width"]
 
     parts: list[MeshPart] = []
-    parts.extend(
-        build_sculpted_head_and_neck(
-            head_center_y=1.62,
-            jaw_width=spec["jaw_width"],
-            cheek_fullness=spec["cheek"],
-            nose_scale=spec["nose"],
-            brow_intensity=spec["brow"],
-            scale_h=sh,
-        )
-    )
-    parts.extend(build_anatomical_body(scale_h=sh, build_width=bw))
-    parts.extend(build_hair_geometry(spec["headgear"], scale_h=sh))
-    parts.extend(build_clothing_and_accessories(char_id, spec["headgear"], spec["prop"], scale_h=sh, build_width=bw))
-
     builder = GlbBuilder()
 
-    # Textures & Materials
-    skin_tex = builder.add_png_texture(
-        generate_skin_texture(spec["skin"], stubble=spec["stubble"], tilak=spec["tilak"])
-    )
-    eye_tex = builder.add_png_texture(generate_eye_texture(spec["iris"]))
-    hair_tex = builder.add_png_texture(generate_hair_texture(spec["hair"]))
-    pri_tex = builder.add_png_texture(
-        generate_fabric_texture(spec["primary"], spec["secondary"], spec["accent"], pattern=spec["pattern"])
-    )
-    sec_tex = builder.add_png_texture(
-        generate_fabric_texture(spec["secondary"], spec["accent"], spec["primary"], pattern=spec["pattern"], seed=23)
-    )
-    muf_tex = builder.add_png_texture(
-        generate_fabric_texture(spec["accent"], spec["primary"], spec["secondary"], pattern="muffler", seed=37)
-    )
+    if char_id == "vikas_guru":
+        parts = build_mitron_complete_parts()
+        skin_tex = builder.add_png_texture(generate_mitron_face_texture())
+        body_skin_tex = builder.add_png_texture(generate_mitron_body_skin_texture())
+        eye_tex = builder.add_png_texture(generate_eye_texture(spec["iris"]))
+        hair_tex = builder.add_png_texture(generate_mitron_hair_beard_texture())
+        jacket_tex = builder.add_png_texture(generate_mitron_jacket_texture())
+        kurta_tex = builder.add_png_texture(generate_mitron_kurta_texture())
 
-    mat_map = {
-        "skin": builder.add_material("skin", tex_idx=skin_tex, roughness=0.58),
-        "eye": builder.add_material("eye", tex_idx=eye_tex, roughness=0.14),
-        "hair": builder.add_material("hair", tex_idx=hair_tex, roughness=0.72),
-        "garment_primary": builder.add_material("garment_primary", tex_idx=pri_tex, roughness=0.78, double_sided=True),
-        "garment_secondary": builder.add_material("garment_secondary", tex_idx=sec_tex, roughness=0.76, double_sided=True),
-        "accent_cloth": builder.add_material("accent_cloth", base_color=[0.96, 0.97, 0.99, 1.0], roughness=0.75, double_sided=True),
-        "muffler": builder.add_material("muffler", tex_idx=muf_tex, roughness=0.88, double_sided=True),
-        "footwear": builder.add_material("footwear", tex_idx=builder.add_png_texture(generate_hair_texture(spec["footwear"], seed=41)), roughness=0.45),
-        "metal": builder.add_material("metal", base_color=[0.96, 0.78, 0.24, 1.0], metallic=0.88, roughness=0.24),
-        "dark_glass": builder.add_material("dark_glass", base_color=[0.04, 0.05, 0.08, 1.0], metallic=0.35, roughness=0.08),
-    }
+        mat_map = {
+            "skin": builder.add_material("skin", tex_idx=skin_tex, roughness=0.62),
+            "body_skin": builder.add_material("body_skin", tex_idx=body_skin_tex, roughness=0.60),
+            "eye": builder.add_material("eye", tex_idx=eye_tex, roughness=0.14),
+            "hair": builder.add_material("hair", tex_idx=hair_tex, roughness=0.76),
+            "jacket": builder.add_material("jacket", tex_idx=jacket_tex, roughness=0.84, double_sided=True),
+            "kurta": builder.add_material("kurta", tex_idx=kurta_tex, roughness=0.80, double_sided=True),
+            "garment_primary": builder.add_material("garment_primary", tex_idx=jacket_tex, roughness=0.84, double_sided=True),
+            "garment_secondary": builder.add_material("garment_secondary", tex_idx=kurta_tex, roughness=0.80, double_sided=True),
+            "button": builder.add_material("button", base_color=[0.42, 0.44, 0.48, 1.0], metallic=0.15, roughness=0.38),
+            "lapel_pin": builder.add_material("lapel_pin", base_color=[0.45, 0.22, 0.20, 1.0], metallic=0.35, roughness=0.32),
+            "glass_lens": builder.add_material("glass_lens", base_color=[0.88, 0.94, 0.99, 0.24], metallic=0.15, roughness=0.06, double_sided=True, alpha_mode="BLEND"),
+            "footwear": builder.add_material("footwear", tex_idx=builder.add_png_texture(generate_hair_texture(spec["footwear"], seed=41)), roughness=0.45),
+            "metal": builder.add_material("metal", base_color=[0.82, 0.84, 0.88, 1.0], metallic=0.88, roughness=0.22),
+            "dark_glass": builder.add_material("dark_glass", base_color=[0.10, 0.11, 0.14, 1.0], metallic=0.25, roughness=0.30),
+        }
+    else:
+        parts.extend(
+            build_sculpted_head_and_neck(
+                head_center_y=1.62,
+                jaw_width=spec["jaw_width"],
+                cheek_fullness=spec["cheek"],
+                nose_scale=spec["nose"],
+                brow_intensity=spec["brow"],
+                scale_h=sh,
+            )
+        )
+        parts.extend(build_anatomical_body(scale_h=sh, build_width=bw))
+        parts.extend(build_hair_geometry(spec["headgear"], scale_h=sh))
+        parts.extend(build_clothing_and_accessories(char_id, spec["headgear"], spec["prop"], scale_h=sh, build_width=bw))
+
+        # Textures & Materials
+        skin_tex = builder.add_png_texture(
+            generate_skin_texture(spec["skin"], stubble=spec["stubble"], tilak=spec["tilak"])
+        )
+        eye_tex = builder.add_png_texture(generate_eye_texture(spec["iris"]))
+        hair_tex = builder.add_png_texture(generate_hair_texture(spec["hair"]))
+        pri_tex = builder.add_png_texture(
+            generate_fabric_texture(spec["primary"], spec["secondary"], spec["accent"], pattern=spec["pattern"])
+        )
+        sec_tex = builder.add_png_texture(
+            generate_fabric_texture(spec["secondary"], spec["accent"], spec["primary"], pattern=spec["pattern"], seed=23)
+        )
+        muf_tex = builder.add_png_texture(
+            generate_fabric_texture(spec["accent"], spec["primary"], spec["secondary"], pattern="muffler", seed=37)
+        )
+
+        mat_map = {
+            "skin": builder.add_material("skin", tex_idx=skin_tex, roughness=0.58),
+            "eye": builder.add_material("eye", tex_idx=eye_tex, roughness=0.14),
+            "hair": builder.add_material("hair", tex_idx=hair_tex, roughness=0.72),
+            "garment_primary": builder.add_material("garment_primary", tex_idx=pri_tex, roughness=0.78, double_sided=True),
+            "garment_secondary": builder.add_material("garment_secondary", tex_idx=sec_tex, roughness=0.76, double_sided=True),
+            "accent_cloth": builder.add_material("accent_cloth", base_color=[0.96, 0.97, 0.99, 1.0], roughness=0.75, double_sided=True),
+            "muffler": builder.add_material("muffler", tex_idx=muf_tex, roughness=0.88, double_sided=True),
+            "footwear": builder.add_material("footwear", tex_idx=builder.add_png_texture(generate_hair_texture(spec["footwear"], seed=41)), roughness=0.45),
+            "metal": builder.add_material("metal", base_color=[0.96, 0.78, 0.24, 1.0], metallic=0.88, roughness=0.24),
+            "dark_glass": builder.add_material("dark_glass", base_color=[0.04, 0.05, 0.08, 1.0], metallic=0.35, roughness=0.08),
+        }
 
     # Build Mesh Primitives grouped by material_key for browser efficiency (<= 10 draw calls!)
     grouped: dict[str, list[MeshPart]] = {}
