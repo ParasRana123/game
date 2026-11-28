@@ -47,13 +47,15 @@ export const ThreeFightCanvas: React.FC<ThreeFightCanvasProps> = ({
     camera.position.set(0, 2.8224, 13.188);
     camera.lookAt(0, 2.8224, 0);
 
-    // 3-Point Arcade Studio Lighting + Ground Shadow Plane
-    const hemi = new THREE.HemisphereLight(0xfff1e6, 0x1e293b, 1.05);
+    // Balanced 3-Point + Front-Fill Arcade Studio Lighting + Ground Shadow Plane
+    const hemi = new THREE.HemisphereLight(0xfff5eb, 0x334155, 1.35);
     scene.add(hemi);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5e4, 2.1);
+    const keyLight = new THREE.DirectionalLight(0xfff7ea, 1.95);
     keyLight.position.set(4.5, 9.5, 7.5);
     keyLight.castShadow = true;
+    keyLight.shadow.bias = -0.0008;
+    keyLight.shadow.normalBias = 0.02;
     keyLight.shadow.mapSize.set(1024, 1024);
     keyLight.shadow.camera.near = 1;
     keyLight.shadow.camera.far = 25;
@@ -63,11 +65,15 @@ export const ThreeFightCanvas: React.FC<ThreeFightCanvasProps> = ({
     keyLight.shadow.camera.bottom = -2;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.1);
+    const frontFill = new THREE.DirectionalLight(0xfffaf0, 0.95);
+    frontFill.position.set(0.0, 3.2, 8.5);
+    scene.add(frontFill);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.95);
     rimLight.position.set(-6.0, 5.0, -5.0);
     scene.add(rimLight);
 
-    const warmFill = new THREE.DirectionalLight(0xf97316, 0.75);
+    const warmFill = new THREE.DirectionalLight(0xf97316, 0.55);
     warmFill.position.set(6.0, 3.0, -4.0);
     scene.add(warmFill);
 

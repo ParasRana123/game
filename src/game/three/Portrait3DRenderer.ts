@@ -56,19 +56,23 @@ export function renderPortrait3D(charId: CharacterId): Promise<string | null> {
         const def = CHARACTERS[charId];
         const scene = new THREE.Scene();
 
-        const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
+        const camera = new THREE.PerspectiveCamera(27, 1, 0.1, 20);
         const headY = def.isBoss ? 1.66 : 1.54;
-        camera.position.set(0.28, headY + 0.04, 1.08);
-        camera.lookAt(0, headY - 0.02, 0);
+        camera.position.set(0.22, headY + 0.03, 1.06);
+        camera.lookAt(0, headY - 0.03, 0);
 
-        const hemi = new THREE.HemisphereLight(0xfff1e6, 0x1e293b, 1.25);
+        const hemi = new THREE.HemisphereLight(0xfff5eb, 0x334155, 1.45);
         scene.add(hemi);
 
-        const key = new THREE.DirectionalLight(0xfff5e4, 2.2);
-        key.position.set(1.8, 3.0, 2.6);
+        const key = new THREE.DirectionalLight(0xfff7ea, 2.0);
+        key.position.set(1.8, 3.0, 2.8);
         scene.add(key);
 
-        const rim = new THREE.DirectionalLight(new THREE.Color(def.palette.aura), 1.6);
+        const front = new THREE.DirectionalLight(0xffffff, 0.85);
+        front.position.set(-0.5, 1.6, 3.0);
+        scene.add(front);
+
+        const rim = new THREE.DirectionalLight(new THREE.Color(def.palette.aura), 1.3);
         rim.position.set(-2.2, 2.2, -1.6);
         scene.add(rim);
 
