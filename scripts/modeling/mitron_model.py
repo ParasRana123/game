@@ -284,3 +284,235 @@ def build_mitron_head_and_face(head_center_y: float = 1.60) -> list[MeshPart]:
         parts.append(MeshPart("MitronGlassTemple", "metal", tp2, compute_smooth_normals(tp2, ti2), tuv2, tj2, tw2, ti2))
 
     return parts
+
+
+def build_mitron_full_body_and_attire(build_width: float = 1.07) -> list[MeshPart]:
+    """
+    Build Mitron's complete anatomically proportioned 3D body & garments matching Reference Image 2:
+    - Full-sleeve crisp white kurta (inner collar, full sleeves to wrist cuffs, split kurta skirt)
+    - Light beige woven sleeveless Nehru jacket (bandhgala collar, front placket, 4 grey buttons,
+      left chest pocket with pen & lapel badge)
+    - Articulated 5-finger hands in clean body skin
+    - Fitted white churidar pajama & grounded dark leather shoes
+    """
+    parts: list[MeshPart] = []
+    bw = build_width
+
+    # 1. White Kurta Base Torso + Inner Collar Stand
+    kurta_torso = [
+        (0.86, 0.148 * bw, 0.098 * bw, (0, 1, 0.0)),
+        (0.95, 0.152 * bw, 0.102 * bw, (0, 1, 0.25)),
+        (1.08, 0.146 * bw, 0.098 * bw, (1, 2, 0.20)),
+        (1.22, 0.160 * bw, 0.108 * bw, (1, 2, 0.65)),
+        (1.36, 0.180 * bw, 0.114 * bw, (2, 3, 0.05)),
+        (1.44, 0.158 * bw, 0.096 * bw, (2, 3, 0.28)),
+        (1.485, 0.070 * bw, 0.068 * bw, (3, 2, 0.30)),
+    ]
+    kt_rings = [_oval_ring(0.0, y, 0.0, rx, rz, 26) for y, rx, rz, _ in kurta_torso]
+    kt_bones = [b for _, _, _, b in kurta_torso]
+    kp, kuv, kj, kw, ki = make_loft_tube(kt_rings, kt_bones, closed_caps=True)
+    parts.append(MeshPart("MitronKurtaTorso", "kurta", kp, compute_smooth_normals(kp, ki), kuv, kj, kw, ki))
+
+    # Split lower kurta hem (front & back panels draping naturally without leg-clipping triangle)
+    for z_dir, name in ((1.0, "KurtaFrontPanel"), (-1.0, "KurtaBackPanel")):
+        panel_rings = [
+            _oval_ring(0.0, 0.68, z_dir * 0.042, 0.145 * bw, 0.072 * bw, 18),
+            _oval_ring(0.0, 0.78, z_dir * 0.036, 0.146 * bw, 0.070 * bw, 18),
+            _oval_ring(0.0, 0.88, z_dir * 0.028, 0.144 * bw, 0.066 * bw, 18),
+        ]
+        pp, puv, pj, pw, pi = make_loft_tube(
+            panel_rings, [(0, 1, 0.05), (0, 1, 0.05), (0, 1, 0.1)], closed_caps=False
+        )
+        parts.append(MeshPart(name, "kurta", pp, compute_smooth_normals(pp, pi), puv, pj, pw, pi))
+
+    # 2. Light Beige Sleeveless Nehru Jacket (Reference Image 2)
+    jacket_specs = [
+        (0.85, 0.156 * bw, 0.106 * bw, (0, 1, 0.08)),
+        (0.98, 0.160 * bw, 0.110 * bw, (0, 1, 0.30)),
+        (1.14, 0.158 * bw, 0.110 * bw, (1, 2, 0.45)),
+        (1.28, 0.172 * bw, 0.120 * bw, (2, 1, 0.15)),
+        (1.40, 0.188 * bw, 0.122 * bw, (2, 3, 0.05)),
+        (1.445, 0.150 * bw, 0.098 * bw, (2, 3, 0.25)),
+    ]
+    jk_rings = [_oval_ring(0.0, y, 0.0, rx, rz, 28) for y, rx, rz, _ in jacket_specs]
+    jk_bones = [b for _, _, _, b in jacket_specs]
+    jp, juv, jj, jw, ji = make_loft_tube(jk_rings, jk_bones, closed_caps=False)
+    parts.append(MeshPart("MitronNehruJacket", "jacket", jp, compute_smooth_normals(jp, ji), juv, jj, jw, ji))
+
+    # Bandhgala Standing Nehru Collar (y = 1.43..1.48)
+    collar_rings = [
+        _oval_ring(0.0, 1.430, -0.002, 0.088 * bw, 0.082 * bw, 22),
+        _oval_ring(0.0, 1.475, -0.004, 0.076 * bw, 0.074 * bw, 22),
+    ]
+    cp, cuv, cj, cw, ci = make_loft_tube(collar_rings, [(2, 3, 0.45), (3, 2, 0.35)], closed_caps=False)
+    parts.append(MeshPart("MitronJacketCollar", "jacket", cp, compute_smooth_normals(cp, ci), cuv, cj, cw, ci))
+
+    # Center Placket Seam + 4 Grey-Horn Buttons (matching Reference Image 2)
+    pl_p, pl_uv, pl_j, pl_w, pl_i = _quad_box(0.0, 1.15, 0.116 * bw, 0.016, 0.27, 0.006, 2)
+    parts.append(MeshPart("MitronJacketPlacket", "jacket", pl_p, compute_smooth_normals(pl_p, pl_i), pl_uv, pl_j, pl_w, pl_i))
+    for by in (0.94, 1.09, 1.24, 1.38):
+        bz = (0.112 if by < 1.0 else 0.123) * bw
+        bp, buv, bj, bw2, bi = make_uv_sphere((0.0, by, bz), (0.011, 0.011, 0.005), 2, 12, 10)
+        parts.append(MeshPart("MitronJacketButton", "button", bp, compute_smooth_normals(bp, bi), buv, bj, bw2, bi))
+
+    # Left Chest Pocket + Silver-Black Pen + Circular Lapel Pin (Reference Image 2)
+    pk_x = 0.078 * bw
+    pk_p, pk_uv, pk_j, pk_w, pk_i = _quad_box(pk_x, 1.285, 0.114 * bw, 0.036, 0.028, 0.006, 2, rot_y=0.35)
+    parts.append(MeshPart("MitronChestPocket", "jacket", pk_p, compute_smooth_normals(pk_p, pk_i), pk_uv, pk_j, pk_w, pk_i))
+    # Pocket pen clip
+    pen_p, pen_uv, pen_j, pen_w, pen_i = _quad_box(pk_x - 0.015, 1.318, 0.120 * bw, 0.004, 0.024, 0.004, 2)
+    parts.append(MeshPart("MitronPocketPen", "metal", pen_p, compute_smooth_normals(pen_p, pen_i), pen_uv, pen_j, pen_w, pen_i))
+    # Circular lapel badge/pin
+    pin_p, pin_uv, pin_j, pin_w, pin_i = make_uv_sphere((pk_x + 0.018, 1.315, 0.112 * bw), (0.013, 0.013, 0.006), 2, 14, 10)
+    parts.append(MeshPart("MitronPocketPin", "lapel_pin", pin_p, compute_smooth_normals(pin_p, pin_i), pin_uv, pin_j, pin_w, pin_i))
+
+    # 3. Full-Sleeve White Kurta Arms (UpperArm + Forearm in crisp white cotton!) + Clean Hands
+    for is_left in (True, False):
+        sign = 1.0 if is_left else -1.0
+        b_sh = 5 if is_left else 9
+        b_ua = 6 if is_left else 10
+        b_fa = 7 if is_left else 11
+        b_ha = 8 if is_left else 12
+        b_fn = 20 if is_left else 21
+
+        sx = sign * 0.198 * bw
+        sleeve_specs = [
+            (sx * 0.85, 1.43, 0.056 * bw, 0.054 * bw, (b_sh, b_ua, 0.65)),
+            (sx * 1.00, 1.38, 0.058 * bw, 0.056 * bw, (b_ua, b_sh, 0.15)),
+            (sx * 1.05, 1.26, 0.052 * bw, 0.051 * bw, (b_ua, b_fa, 0.12)),
+            (sx * 1.09, 1.15, 0.048 * bw, 0.047 * bw, (b_ua, b_fa, 0.55)),
+            (sx * 1.12, 1.02, 0.045 * bw, 0.044 * bw, (b_fa, b_ua, 0.10)),
+            (sx * 1.14, 0.91, 0.036 * bw, 0.034 * bw, (b_fa, b_ha, 0.45)),
+        ]
+        s_rings = [_oval_ring(x, y, 0.0, rx, rz, 18) for x, y, rx, rz, _ in sleeve_specs]
+        s_bones = [b for _, _, _, _, b in sleeve_specs]
+        sp, suv, sj, sw, si = make_loft_tube(s_rings, s_bones, closed_caps=True)
+        parts.append(
+            MeshPart(
+                "LeftKurtaSleeve" if is_left else "RightKurtaSleeve",
+                "kurta",
+                sp,
+                compute_smooth_normals(sp, si),
+                suv,
+                sj,
+                sw,
+                si,
+            )
+        )
+
+        # Wrist & Palm (clean body_skin)
+        palm_x = sx * 1.14
+        palm_rings = [
+            _oval_ring(palm_x, 0.91, 0.002, 0.028, 0.026, 14),
+            _oval_ring(palm_x, 0.86, 0.010, 0.022, 0.038, 14),
+            _oval_ring(palm_x, 0.825, 0.012, 0.019, 0.036, 14),
+        ]
+        pp, puv, pj, pw, pi = make_loft_tube(
+            palm_rings, [(b_ha, b_fa, 0.2), (b_ha, b_fn, 0.1), (b_ha, b_fn, 0.35)], closed_caps=True
+        )
+        parts.append(MeshPart("LeftPalm" if is_left else "RightPalm", "body_skin", pp, compute_smooth_normals(pp, pi), puv, pj, pw, pi))
+
+        # 5 Articulated Fingers per Hand
+        finger_offsets = [
+            ("Thumb", -sign * 0.012, 0.868, 0.036, 0.034, 0.010),
+            ("Index", 0.0, 0.822, 0.034, 0.044, 0.0085),
+            ("Middle", 0.0, 0.820, 0.012, 0.048, 0.0085),
+            ("Ring", 0.0, 0.821, -0.010, 0.044, 0.0080),
+            ("Pinky", 0.0, 0.824, -0.030, 0.036, 0.0072),
+        ]
+        for fname, dx_f, y_base, dz_f, flen, frad in finger_offsets:
+            fx = palm_x + dx_f
+            f_rings = [
+                _oval_ring(fx, y_base, dz_f, frad, frad, 10),
+                _oval_ring(fx - sign * 0.008, y_base - flen * 0.55, dz_f + 0.006, frad * 0.9, frad * 0.9, 10),
+                _oval_ring(fx - sign * 0.020, y_base - flen * 0.95, dz_f + 0.010, frad * 0.72, frad * 0.72, 10),
+            ]
+            fgp, fguv, fgj, fgw, fgi = make_loft_tube(
+                f_rings, [(b_ha, b_fn, 0.3), (b_fn, b_ha, 0.2), (b_fn, b_ha, 0.05)], closed_caps=True
+            )
+            parts.append(
+                MeshPart(
+                    f"{'Left' if is_left else 'Right'}{fname}",
+                    "body_skin",
+                    fgp,
+                    compute_smooth_normals(fgp, fgi),
+                    fguv,
+                    fgj,
+                    fgw,
+                    fgi,
+                )
+            )
+
+    # 4. White Churidar Pajama Legs & Grounded Formal Leather Shoes
+    for is_left in (True, False):
+        sign = 1.0 if is_left else -1.0
+        b_th = 13 if is_left else 16
+        b_sh = 14 if is_left else 17
+        b_ft = 15 if is_left else 18
+        lx = sign * 0.104 * bw
+
+        leg_specs = [
+            (0.91, 0.088 * bw, 0.092 * bw, (b_th, 0, 0.35)),
+            (0.72, 0.076 * bw, 0.080 * bw, (b_th, b_sh, 0.05)),
+            (0.51, 0.058 * bw, 0.060 * bw, (b_th, b_sh, 0.50)),
+            (0.32, 0.056 * bw, 0.058 * bw, (b_sh, b_th, 0.10)),
+            (0.18, 0.048 * bw, 0.050 * bw, (b_sh, b_ft, 0.25)),
+            (0.14, 0.052 * bw, 0.054 * bw, (b_sh, b_ft, 0.35)),  # Churidar ankle gather
+            (0.10, 0.044 * bw, 0.046 * bw, (b_sh, b_ft, 0.50)),
+        ]
+        l_rings = [_oval_ring(lx, y, 0.0, rx, rz, 20) for y, rx, rz, _ in leg_specs]
+        l_bones = [b for _, _, _, b in leg_specs]
+        lp, luv, lj, lw, li = make_loft_tube(l_rings, l_bones, closed_caps=True)
+        parts.append(
+            MeshPart(
+                "LeftChuridar" if is_left else "RightChuridar",
+                "kurta",
+                lp,
+                compute_smooth_normals(lp, li),
+                luv,
+                lj,
+                lw,
+                li,
+            )
+        )
+
+        # Grounded Dark Leather Shoe / Mojari (y = 0.000 flush)
+        shoe_rings = [
+            _oval_ring(lx, 0.000, 0.048, 0.052, 0.118, 16),
+            _oval_ring(lx, 0.028, 0.052, 0.050, 0.114, 16),
+            _oval_ring(lx, 0.068, 0.032, 0.044, 0.086, 16),
+            _oval_ring(lx, 0.105, 0.004, 0.042, 0.046, 16),
+        ]
+        shp, shuv, shj, shw, shi = make_loft_tube(
+            shoe_rings, [(b_ft, b_sh, 0.05), (b_ft, b_sh, 0.05), (b_ft, b_sh, 0.15), (b_ft, b_sh, 0.45)], closed_caps=True
+        )
+        parts.append(
+            MeshPart(
+                "LeftShoe" if is_left else "RightShoe",
+                "footwear",
+                shp,
+                compute_smooth_normals(shp, shi),
+                shuv,
+                shj,
+                shw,
+                shi,
+            )
+        )
+
+    # 5. Sleek Handheld Microphone cleanly positioned in RightHand (no chest overlap)
+    hx = -0.25 * bw
+    hy = 0.84
+    sh_p, sh_uv, sh_j, sh_w, sh_i = _quad_box(hx - 0.01, hy + 0.05, 0.095, 0.010, 0.075, 0.010, 12, rot_x=0.35)
+    parts.append(MeshPart("MitronMicHandle", "dark_glass", sh_p, compute_smooth_normals(sh_p, sh_i), sh_uv, sh_j, sh_w, sh_i))
+    mh_p, mh_uv, mh_j, mh_w, mh_i = make_uv_sphere((hx - 0.01, hy + 0.125, 0.128), (0.022, 0.024, 0.022), 12, 14, 10)
+    parts.append(MeshPart("MitronMicHead", "metal", mh_p, compute_smooth_normals(mh_p, mh_i), mh_uv, mh_j, mh_w, mh_i))
+
+    return parts
+
+
+def build_mitron_complete_parts() -> list[MeshPart]:
+    return [
+        *build_mitron_head_and_face(head_center_y=1.60),
+        *build_mitron_full_body_and_attire(build_width=1.07),
+    ]
+
