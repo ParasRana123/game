@@ -81,13 +81,18 @@ export const Character3DInspectorModal: React.FC<Character3DInspectorModalProps>
     controls.update();
     controlsRef.current = controls;
 
-    scene.add(new THREE.HemisphereLight(0xfff1e6, 0x1e293b, 1.15));
-    const key = new THREE.DirectionalLight(0xfff5e4, 2.2);
+    scene.add(new THREE.HemisphereLight(0xfff5eb, 0x334155, 1.4));
+    const key = new THREE.DirectionalLight(0xfff7ea, 2.0);
     key.position.set(3, 6, 4);
     key.castShadow = true;
+    key.shadow.bias = -0.0008;
     scene.add(key);
 
-    const rim = new THREE.DirectionalLight(0x38bdf8, 1.2);
+    const frontFill = new THREE.DirectionalLight(0xfffaf0, 0.9);
+    frontFill.position.set(0, 2.2, 5);
+    scene.add(frontFill);
+
+    const rim = new THREE.DirectionalLight(0x38bdf8, 1.0);
     rim.position.set(-4, 3, -3);
     scene.add(rim);
 
